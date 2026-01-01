@@ -9,6 +9,7 @@ from __future__ import annotations
 import html
 import os
 import re
+import shutil
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -38,9 +39,11 @@ def frame(title: str, content: str, page: Path, *, document: bool = True) -> str
 
 
 def main() -> None:
+    if OUTPUT.exists():
+        shutil.rmtree(OUTPUT)
     sources = [ROOT / p for p in ("README.md", "REVIEW.md", "ARCHITECTURE.md", "CONTRIBUTING.md", "SECURITY.md")]
     sources.extend((ROOT / "docs").glob("*.md"))
-    sources.extend(p for p in (ROOT / "environments").rglob("*.md") if "vendor" not in p.parts)
+    sources.extend(p for p in (ROOT / "environments").rglob("*.md") if not {"vendor", ".venv"}.intersection(p.parts))
     sources.extend((ROOT / "skills").rglob("*.md"))
     pages = {p.resolve(): OUTPUT / p.relative_to(ROOT).with_suffix(".html") for p in sources}
 
@@ -49,7 +52,7 @@ def main() -> None:
         text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
         rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "toc"])
 
-        def link(match: re.Match[str]) -> str:
+        def link(match: re.Match[str], source: Path = source, target: Path = target) -> str:
             attribute, value = match.groups()
             parsed = urlsplit(html.unescape(value))
             if parsed.scheme or parsed.netloc or value.startswith("#"):
