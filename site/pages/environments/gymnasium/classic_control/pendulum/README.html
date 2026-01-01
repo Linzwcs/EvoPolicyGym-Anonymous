@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Pendulum Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-pendulum-benchmark">EvoPolicyGym Pendulum Benchmark</h1>
+<p>This directory contains the independently installable Pendulum Benchmark for
+EvoPolicyGym. It adapts Gymnasium <code>Pendulum-v1</code> through the public EvoPolicyGym
+authoring SPI.</p>
+<p>The Benchmark contract is:</p>
+<ul>
+<li>one semantic observation dictionary containing <code>cos_theta</code>, <code>sin_theta</code>,
+  and <code>theta_angular_velocity</code>, with angle conventions and units in the spec;</li>
+<li>one exact finite floating-point torque Action in <code>[-2.0, 2.0]</code>;</li>
+<li>one complete Gymnasium Episode with a fixed 200-step horizon;</li>
+<li>deterministic, split-scoped hidden environment seeds;</li>
+<li>mean Episode return as the scalar score;</li>
+<li><code>-3300</code> return for a Policy failure, below the approximately <code>-3254.72</code>
+  theoretical minimum complete Episode return.</li>
+</ul>
+<p><code>theta = 0</code> is upright and <code>theta = ±π</code> is downward. A Policy reconstructs the
+normalized angle with <code>atan2(sin_theta, cos_theta)</code>. Reward uses the state
+before applying the action:</p>
+<pre><code class="language-text">reward = -(theta² + 0.1*angular_velocity² + 0.001*torque²)
+</code></pre>
+<p>The adapter also validates Gymnasium's semi-implicit Euler dynamics: gravity
+is <code>10 m/s²</code>, mass and length are both <code>1</code>, angular velocity is clipped to
+<code>±8 rad/s</code>, and each step advances <code>0.05 s</code>. Zero is the maximum per-step
+reward. Unlike the other Classic Control tasks, Pendulum has no success
+termination; every normal Episode reaches the 200-step time limit. The official
+task contract is documented in the
+<a href="https://gymnasium.farama.org/environments/classic_control/pendulum/">Gymnasium Pendulum reference</a>.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from pendulum import PendulumBenchmark, baseline_program
+</code></pre>
+<p><code>PendulumBenchmark</code> owns the public specification, deterministic Episode
+planning, fresh Environment construction, scoring, Feedback, and trace
+publication. <code>baseline_program()</code> returns an intentionally weak zero-torque
+Policy suitable as the starting point for development Runs.</p>
+<p>Actions are never clipped, cast, or replaced. Integers, booleans, non-finite
+floats, out-of-range floats, and structured values raise <code>InvalidAction</code>.
+The adapter wraps an accepted scalar float in the one-element sequence expected
+by Gymnasium.</p>
+<p>The Benchmark adapter converts Gymnasium's positional array into:</p>
+<pre><code class="language-json">{
+  &quot;cos_theta&quot;: -0.996,
+  &quot;sin_theta&quot;: 0.089,
+  &quot;theta_angular_velocity&quot;: -0.431
+}
+</code></pre>
+<p>The names are part of the Benchmark contract. A Policy does not need to infer
+the Gymnasium array order.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return, completion status, and separate mean Episode
+costs for angle, angular velocity, and torque. State diagnostics include mean
+and closest absolute angle error, fraction of samples in the upright half,
+mean absolute angular velocity, and mean absolute torque. These distinguish
+failure to swing up, failure to stabilize, and excessive control effort.</p>
+<p>The public <code>trace.jsonl</code> artifact retains at most eight Episodes. Every
+transition contains the Policy-visible observations, unmodified torque, reward,
+termination flags, and public transition metrics. Metrics expose the angle and
+velocity before and after the action, gravity and torque velocity increments,
+clipping, the three reward terms, cumulative costs and return, elapsed time,
+remaining steps, unit-circle error, and terminal reason. Episode rows summarize
+the same cost and stabilization diagnostics.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/classic_control/pendulum
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by the Evaluation test is explicitly unsafe and
+provides no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

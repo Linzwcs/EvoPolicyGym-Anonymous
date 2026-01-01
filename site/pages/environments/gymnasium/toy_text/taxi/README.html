@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Taxi Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-taxi-benchmark">EvoPolicyGym Taxi Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Taxi-v4</code>
+through EvoPolicyGym's public authoring SPI. A Policy must navigate to a
+passenger, pick them up, and deliver them to one of four landmarks.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from taxi import TaxiBenchmark, TaxiConfig, baseline_program
+
+benchmark = TaxiBenchmark(
+    TaxiConfig(
+        is_rainy=True,
+        fickle_passenger=False,
+        rainy_probability=0.8,
+        fickle_probability=0.3,
+    )
+)
+</code></pre>
+<p><code>TaxiConfig</code> exposes all four non-rendering Gymnasium constructor parameters.
+They are published through <code>BenchmarkSpec.environment_parameters</code>, contribute
+to <code>environment_digest</code>, and are delivered to every Policy in
+<code>PolicyContext.environment_parameters</code>.</p>
+<p>In rainy mode, a movement follows the requested direction with
+<code>rainy_probability</code>; the remaining probability is split between the two
+lateral directions. A requested move blocked by a wall or boundary leaves the
+taxi in place without lateral drift. With a fickle passenger, reset samples
+with <code>fickle_probability</code> whether to change the destination once, on the first
+successful taxi movement after the first pickup.</p>
+<h2 id="contract">Contract</h2>
+<p>The positional Gymnasium state is decoded before crossing the Policy boundary:</p>
+<pre><code class="language-json">{
+  &quot;state&quot;: 341,
+  &quot;taxi_row&quot;: 3,
+  &quot;taxi_column&quot;: 2,
+  &quot;passenger_location&quot;: &quot;red&quot;,
+  &quot;destination&quot;: &quot;green&quot;,
+  &quot;legal_actions&quot;: [0, 1, 3]
+}
+</code></pre>
+<p>The six exact integer Actions are:</p>
+<ul>
+<li><code>0</code>: move south;</li>
+<li><code>1</code>: move north;</li>
+<li><code>2</code>: move east;</li>
+<li><code>3</code>: move west;</li>
+<li><code>4</code>: pick up the passenger;</li>
+<li><code>5</code>: drop off the passenger.</li>
+</ul>
+<p><code>legal_actions</code> is the public Gymnasium advisory mask returned by <code>reset()</code> and
+<code>step()</code>. It lists Actions expected to change the encoded state; it is not an
+enforced legality mask. All six integer Actions are accepted. An unlisted wall
+movement executes as a <code>-1</code> no-op, while an unlisted illegal pickup or dropoff
+executes with reward <code>-10</code>. Values outside the six-Action integer domain are
+never clipped, cast, or replaced.</p>
+<p>Every ordinary step and valid pickup costs <code>-1</code>. Successful delivery returns
+<code>+20</code> and terminates the Episode. Dropping an onboard passenger at a wrong
+landmark unloads them there and costs the ordinary <code>-1</code>; pickup away from the
+passenger or dropoff away from a landmark returns <code>-10</code> without changing state.
+The scalar score is mean Episode return over the requested split. A Policy
+failure receives <code>-2000</code>, the minimum 200-step complete return.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return, mean steps, successful deliveries, time limits,
+Policy failures, pickup/dropoff/illegal/no-op event counts, observed destination
+changes, and bounded trace coverage. The public <code>trace.jsonl</code> artifact retains
+at most eight Episodes and includes the complete semantic observations seen by
+the Policy, named unmodified Actions, rewards, next observations, termination
+flags, advisory-mask membership, event classification, observed movement,
+sampled rainy-branch probability, state-component changes, step count, and
+terminal reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<p><code>baseline_program()</code> always requests movement south. It is intentionally weak
+and leaves navigation, pickup, and delivery strategy to the coding agent.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/toy_text/taxi
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

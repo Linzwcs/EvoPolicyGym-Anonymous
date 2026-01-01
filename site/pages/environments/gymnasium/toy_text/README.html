@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Gymnasium Toy Text · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="gymnasium-toy-text">Gymnasium Toy Text</h1>
+<p>Toy Text environments expose compact discrete state and action spaces while
+retaining meaningful stochastic planning behavior.</p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Package</th>
+<th>Policy observation</th>
+<th>Policy action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="blackjack/README.html">Blackjack</a></td>
+<td><code>evopolicygym-benchmark-blackjack</code></td>
+<td>Player sum, dealer card, and usable Ace</td>
+<td>Stick or hit</td>
+</tr>
+<tr>
+<td><a href="cliff_walking/README.html">CliffWalking</a></td>
+<td><code>evopolicygym-benchmark-cliff-walking</code></td>
+<td>State, coordinates, and terrain tile</td>
+<td>Integer <code>0</code>, <code>1</code>, <code>2</code>, or <code>3</code></td>
+</tr>
+<tr>
+<td><a href="frozen_lake/README.html">FrozenLake</a></td>
+<td><code>evopolicygym-benchmark-frozen-lake</code></td>
+<td>Named state, coordinates, and tile</td>
+<td>Integer <code>0</code>, <code>1</code>, <code>2</code>, or <code>3</code></td>
+</tr>
+<tr>
+<td><a href="taxi/README.html">Taxi</a></td>
+<td><code>evopolicygym-benchmark-taxi</code></td>
+<td>Taxi position, passenger, destination, and legal Actions</td>
+<td>Integer <code>0</code> through <code>5</code></td>
+</tr>
+</tbody>
+</table>
+<p>All four standard Gymnasium Toy Text environments are implemented as
+independently installable distributions. Their selected rules or transition
+dynamics are published through
+<code>BenchmarkSpec.environment_parameters</code> and delivered to every Policy in
+<code>PolicyContext.environment_parameters</code>. Taxi-v4 preserves Gymnasium's public
+action mask as <code>observation.legal_actions</code>.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

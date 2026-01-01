@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym HumanoidStandup Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-humanoidstandup-benchmark">EvoPolicyGym HumanoidStandup Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium
+<code>HumanoidStandup-v5</code> through EvoPolicyGym's public authoring SPI and official
+packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from humanoid_standup import (
+    HumanoidStandupBenchmark,
+    HumanoidStandupConfig,
+    baseline_program,
+)
+
+benchmark = HumanoidStandupBenchmark(
+    HumanoidStandupConfig(
+        frame_skip=5,
+        ctrl_cost_weight=0.1,
+        impact_cost_weight=0.0000005,
+        impact_cost_range=(None, 10.0),
+        reset_noise_scale=0.01,
+        exclude_current_positions_from_observation=True,
+        include_cinert_in_observation=True,
+        include_cvel_in_observation=True,
+        include_qfrc_actuator_in_observation=True,
+        include_cfrc_ext_in_observation=True,
+    )
+)
+</code></pre>
+<p>All listed parameters are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. <code>None</code> is the public representation of an
+unbounded lower impact-cost clamp. Gymnasium's official
+<code>humanoidstandup.xml</code> model is fixed. Custom XML paths and rendering/camera
+settings are Host-owned and never cross the Policy boundary.</p>
+<p>Gymnasium 1.3.0 accepts <code>uph_cost_weight</code>, but its <code>HumanoidStandup-v5</code>
+implementation never uses that stored value in reward computation. This
+Benchmark intentionally does not expose that no-op argument, so changing a
+parameter cannot change identity without changing behavior.</p>
+<h2 id="contract">Contract</h2>
+<p>The default Policy observation contains 45 named torso and joint state floats
+plus four optional semantic objects: 130 body-inertia values, 78 center-of-mass
+velocity values, 17 actuator-force values, and 78 external-force values. These
+objects preserve all 348 default Gymnasium values while grouping them by body
+or joint. Each inclusion flag removes its corresponding object; disabling
+position exclusion adds root-qpos torso x/y. The actuator-force object follows
+generalized-state order (<code>abdomen_z</code> before <code>abdomen_y</code>), whereas Action order
+begins <code>abdomen_y, abdomen_z, abdomen_x</code>.</p>
+<p>An Action is an exact 17-float list containing abdomen, hip, knee, shoulder,
+and elbow controls, each in <code>[-0.4, 0.4]</code>. Official actuator gears are
+published for every component: most abdomen/hip axes use <code>100</code>, hip-y uses
+<code>300</code>, knees use <code>200</code>, and shoulder/elbow actuators use <code>25</code>. Integers,
+tuples, non-finite values, and out-of-range values are rejected rather than
+converted or clipped.</p>
+<p>HumanoidStandup never terminates naturally and truncates after 1000 steps.
+Reward is absolute torso height divided by the MuJoCo model timestep, plus
+one, minus control and impact costs. This follows the pinned implementation,
+including its use of the <code>0.003</code>-second model timestep rather than the default
+<code>0.015</code>-second configured frame duration. The official model's nominal prone
+root z is <code>0.105m</code>, and reset noise produces initial heights near that value;
+the upstream generated prose that describes a <code>1.4m</code> initial height does not
+match this packaged model. Because the reward uses absolute height rather than
+height change, feedback reports both absolute height and gain from reset.
+The scalar Benchmark score is mean Episode return.</p>
+<p>Policy failure receives a configuration-scaled negative return. The packaged
+baseline applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return and steps; initial/final/minimum/maximum torso
+height and maximum gain from reset; vertical velocity and upward-step fraction;
+quaternion-derived torso tilt; horizontal drift; action use and gear-scaled
+controls; actuator, tendon, and external-force diagnostics when their source
+observations are enabled; complete current and cumulative reward decomposition;
+time-limit outcomes; Policy failures; and bounded trace coverage.
+<code>trace.jsonl</code> retains at most four Episodes and at most 100 transitions per
+retained Episode. Transitions are sampled uniformly with the first and final
+transition included. Every retained transition contains complete nested
+observations, named Actions, next observations, all diagnostics, and terminal
+reason. Episode rows and Feedback publish the real step count, sampling mode,
+retained transition count, and omitted transition count. Disabled optional
+observations remain unavailable rather than being leaked back through
+feedback.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/humanoid_standup
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

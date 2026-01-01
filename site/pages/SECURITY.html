@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Security · EvoPolicyGym</title><link rel="stylesheet" href="../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="docs/index.html">Documentation</a><a href="../../index.html#environments">Environments</a><a href="REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="security">Security</h1>
+<h2 id="supported-execution-profile">Supported execution profile</h2>
+<p>The current <code>ProcessExecution</code> profile is for trusted local code. It starts
+Policy and Coding Agent subprocesses with the authority of the current
+operating-system user. The explicit acknowledgement required by the API does
+not provide isolation and must never be described as a sandbox.</p>
+<p>Do not evaluate hostile Programs or run untrusted Coding Agents with this
+profile. Docker, virtual-machine isolation, durable recovery, and a formal
+production operator are not implemented in the active version.</p>
+<h2 id="reporting">Reporting</h2>
+<p>Please report suspected vulnerabilities privately to the project maintainers
+before opening a public issue. Include the affected version, execution profile,
+reproduction steps, and potential impact.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

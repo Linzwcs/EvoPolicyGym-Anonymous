@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym DeepMind Control Suite Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-deepmind-control-suite-benchmark">EvoPolicyGym DeepMind Control Suite Benchmark</h1>
+<p>This independent distribution exposes all 28 tasks in dm-control 1.0.43's
+official <code>suite.BENCHMARKING</code> collection through EvoPolicyGym's public
+authoring API.</p>
+<p><code>DmControlConfig.profile</code> fixes one domain/task pair for a Run. Every profile
+uses the upstream state observations, continuous task reward, action bounds,
+task randomization, control timestep, and 1,000-step default time limit.</p>
+<pre><code class="language-python">from dm_control_benchmarks import DmControlBenchmark, DmControlConfig
+
+benchmark = DmControlBenchmark(
+    DmControlConfig(profile=&quot;cartpole-swingup&quot;, max_episode_steps=1_000)
+)
+</code></pre>
+<h2 id="coverage">Coverage</h2>
+<ul>
+<li>Acrobot (2), Ball in Cup (1), Cartpole (4), Cheetah (1), Finger (3),
+  Pendulum (1), Point Mass (1), and Reacher (2);</li>
+<li>Fish (2), Hopper (2), Humanoid (3), Swimmer (2), and Walker (3);</li>
+<li>Manipulator Bring Ball (1).</li>
+</ul>
+<p>The Policy observes a dictionary of named <code>float64</code> tensors that preserves the
+upstream observation fields and shapes. Simulator objects, render contexts,
+Host paths, seeds, and raw Episode identity never cross the Policy boundary.
+These values are <code>TensorValue</code> objects rather than indexable sequences; their
+<code>data</code> is packed little-endian <code>float64</code>, and the packaged baseline shows a
+standard-library-only <code>struct.iter_unpack("&lt;d", ...)</code> decoder.</p>
+<p>Actions are exact-float arrays with the upstream shape and bounds. For every
+current benchmarking task the bounds are <code>[-1, 1]</code>. Invalid Actions are
+rejected before <code>Environment.step()</code>; they are never clipped or repaired.
+Feedback scores mean continuous return and provides bounded public JSONL
+traces plus reward, discount, action, and state-motion diagnostics. For every
+Episode with at least one valid transition, it also preserves every captured
+128x128 frame from the suite's <code>camera_id=0</code> losslessly in
+<code>rendered-frames.npz</code>. The evidence contains frame pixels, step indices,
+rewards, reward presence, and cumulative returns. A replay GIF is derived from
+the same frames for convenient inspection; it is not the sole visual evidence.</p>
+<p>The Host captures the initial state, step 1, a fixed stride chosen from the
+configured horizon, and the terminal state, for at most 42 frames per Episode.
+Short Episodes capture every step. Raw RGB values exist in Host-only Step
+metrics during evaluation, are removed from the JSONL trace, and never become
+Policy observations. The lossless frame evidence, derived GIF, and
+reproducible trace all use <code>retention="bulk"</code>. Each visual-evidence manifest
+states whether capture is complete for the configured sampling schedule and
+whether it covers every Episode step. The Kernel-owned <code>feedback.json</code>
+<code>episodes</code> array preserves every Episode's status, reward, step count, and
+Policy failure without summary truncation. A zero-step Policy failure is
+recorded there with an explicit unavailable visual-evidence manifest because
+the public Environment SPI has no post-reset artifact channel.</p>
+<p>Camera capture is diagnostic evidence and is fail-soft: a missing offscreen GL
+backend is reported in Feedback without changing the physics Episode or score.
+On macOS the adapter uses MuJoCo's native CGL renderer so Episode worker
+threads do not enter dm_control's GLFW window path. Headless Linux deployments
+should provision a working MuJoCo EGL or OSMesa profile.</p>
+<h2 id="runtime-pin">Runtime pin</h2>
+<p>The distribution pins <code>dm-control==1.0.43</code> and <code>mujoco&gt;=3.10,&lt;3.11</code>.
+dm-control 1.0.43's generated MuJoCo structure indexer reads <code>MjData.qM</code>, which
+is present in MuJoCo 3.10 but absent in 3.11. The unconstrained dependency
+currently resolves to 3.11 and fails while constructing the first task. Revisit
+the upper bound when dm-control publishes generated bindings for that layout.</p>
+<h2 id="development">Development</h2>
+<pre><code class="language-console">uv sync --extra dev
+uv run ruff check src tests scripts
+uv run mypy --no-incremental
+uv run python -m unittest discover -s tests
+uv build
+</code></pre>
+<p>The Luna end-to-end check uses the explicitly unsafe local process execution
+profile:</p>
+<pre><code class="language-console">uv run python scripts/run_dm_control_codex.py \
+  --record-to /private/tmp/dmc-luna \
+  --model gpt-5.6-luna \
+  --reasoning-effort high \
+  --allow-unsafe-process
+</code></pre>
+<p><code>ProcessExecution</code> is not a sandbox. Run this only with trusted Agent and
+Policy code. A short record path avoids the macOS Unix-domain socket limit;
+move the closed Run record under the repository's <code>runs/</code> directory afterward.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

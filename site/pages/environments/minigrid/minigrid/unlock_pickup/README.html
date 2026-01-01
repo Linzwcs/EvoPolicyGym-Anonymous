@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid UnlockPickup Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-unlockpickup-benchmark">MiniGrid UnlockPickup Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for
+<a href="https://minigrid.farama.org/environments/minigrid/UnlockPickupEnv/">MiniGrid UnlockPickup</a>.
+The Policy must acquire the matching key, unlock the second room, release the
+key, and collect the mission box.</p>
+<pre><code class="language-python">from minigrid_unlock_pickup import UnlockPickupBenchmark, baseline_program
+
+benchmark = UnlockPickupBenchmark()
+program = baseline_program()
+</code></pre>
+<p>The spec defines image axes and channels, view orientation, carried-object and
+compass encodings, the exact reward formula, and termination rules. Feedback
+and <code>trace.jsonl</code> expose key/door colors and discovery steps, key pickup/drop,
+door opening as an intermediate milestone, target discovery and approach,
+current carried and front objects, failed pickup/drop/toggle attempts,
+remaining horizon, observation novelty, ineffective Actions, and per-Action
+usage. They also identify the irreversible case where <code>toggle</code> destroys the
+mission box without terminating. No seeds, private identity, or Host paths are
+published. The packaged baseline uses public observations only. Long traces
+retain the first 128 and final 32 transitions, with retained and omitted
+coverage reported explicitly. Each
+traced observation also lists visible objects with their color and state.
+<code>ProcessExecution.unsafe()</code> is used only for trusted baseline tests and is not
+a sandbox.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

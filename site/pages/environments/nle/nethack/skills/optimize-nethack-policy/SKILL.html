@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Optimize an NLE NetHack Policy · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../../docs/index.html">Documentation</a><a href="../../../../../../../index.html#environments">Environments</a><a href="../../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="optimize-an-nle-nethack-policy">Optimize an NLE NetHack Policy</h1>
+<p>Maximize mean shaped return in deterministic but hidden NetHackScore Episodes.
+The task uses NLE 1.3.0, NetHack 3.6.7, a fixed neutral human male Monk, the
+standard 23-action task set, and at most 5,000 Policy steps. Each Policy failure
+receives a large negative return, so validity and termination come first.</p>
+<h2 id="respect-the-abi">Respect the ABI</h2>
+<ul>
+<li>Export <code>make_policy(context)</code> from <code>policy.py</code> and return an object with
+  <code>act(observation)</code>.</li>
+<li>Return an exact integer from 0 through 22. Booleans, floats, containers, and
+  out-of-range integers are invalid; the Benchmark never repairs an Action.</li>
+<li>A fresh Policy process and instance are created for every Episode. Keep map,
+  inventory, prompt, and plan state only between <code>act()</code> calls in that Episode.</li>
+<li>Read public static configuration from <code>context.environment_parameters</code>.
+  Never infer, request, or search for Environment seeds or Host paths.</li>
+</ul>
+<h2 id="actions">Actions</h2>
+<pre><code class="language-text"> 0 more               8 northwest         16 run_northwest
+ 1 north              9 run_north         17 up
+ 2 east              10 run_east          18 down
+ 3 south             11 run_south         19 wait
+ 4 west              12 run_west          20 kick
+ 5 northeast         13 run_northeast     21 eat
+ 6 southeast         14 run_southeast     22 search
+ 7 southwest         15 run_southwest
+</code></pre>
+<p>Actions are NLE keyboard inputs. In a prompt, the same raw key can mean an
+answer rather than movement. For example Actions 1 through 8 emit <code>k l j h u n
+b y</code>; Action 21 emits <code>e</code>, Action 22 emits <code>s</code>, and Action 0 emits Enter. Inspect
+<code>message</code> and <code>input_mode</code> before interpreting an Action as an ordinary command.</p>
+<h2 id="observation">Observation</h2>
+<p>The observation is a dictionary:</p>
+<ul>
+<li><code>screen.glyphs</code>: <code>int16</code> <code>TensorValue</code>, shape <code>(21, 79)</code>;</li>
+<li><code>screen.chars</code>: <code>uint8</code> <code>TensorValue</code>, shape <code>(21, 79)</code>, row-major visible
+  character codes;</li>
+<li><code>screen.colors</code>: <code>uint8</code> <code>TensorValue</code>, shape <code>(21, 79)</code>;</li>
+<li><code>stats</code>: named public NLE blstats, including <code>x</code>, <code>y</code>, <code>score</code>, HP, depth,
+  gold, experience, turn, hunger, encumbrance, dungeon level, and conditions;</li>
+<li><code>message</code>: the current public NetHack message;</li>
+<li><code>inventory</code>: only populated entries with <code>letter</code>, <code>description</code>, <code>glyph</code>,
+  and <code>object_class</code>;</li>
+<li><code>input_mode</code>: <code>normal</code>, <code>yes_no</code>, <code>get_line</code>, or <code>more</code>.</li>
+</ul>
+<p>The Policy does not receive NLE's privileged <code>internal</code> array, raw seeds,
+ttyrec paths, rewards, or evaluator state. Decode tensors from
+<code>TensorValue.data</code>; do not import or reach into the trusted NLE Environment.</p>
+<h2 id="build-an-episode-local-controller">Build an Episode-local controller</h2>
+<p>Use explicit layers that can be tested separately:</p>
+<ol>
+<li><strong>Prompt handler:</strong> respond to <code>&lt;More&gt;</code>, direction, eating, and yes/no
+   questions before normal navigation. A prompt that is mistaken for movement
+   commonly creates frozen-step penalties or loops.</li>
+<li><strong>Map memory:</strong> combine visible characters, colors, glyphs, current position,
+   and dungeon level. Track visited, blocked, dangerous, door, corridor,
+   staircase, item, and monster cells without assuming a hidden seed route.</li>
+<li><strong>Immediate safety:</strong> monitor HP, hunger, conditions, nearby monsters, and
+   escape space. Do not start a long run or repeated search while threatened.</li>
+<li><strong>Exploration:</strong> prefer reachable low-visit frontiers, search near plausible
+   dead ends, handle doors deliberately, and avoid immediate reversal loops.</li>
+<li><strong>Resource state:</strong> track public inventory descriptions and observed outcome
+   messages. Initiating <code>eat</code> and selecting an inventory letter are separate
+   decisions.</li>
+<li><strong>Progress plan:</strong> descend when prepared, collect useful public items, and
+   balance score gain against survival and frozen-step penalties.</li>
+</ol>
+<p>The standard 23-action profile is deliberately narrower than a full NetHack
+keyboard. Do not write plans that require unavailable commands such as wield,
+wear, quaff, read, open, or arbitrary inventory letters.</p>
+<h2 id="optimize-the-actual-metric">Optimize the actual metric</h2>
+<p>The scalar score is mean Episode return from <code>NetHackScore-v0</code>: NetHack score
+deltas plus a <code>-0.01</code> penalty when repeated Environment steps do not advance
+game time. <code>mean_game_score</code>, depth, deaths, ascensions, truncations, and Policy
+failures are secondary diagnostics. A Policy failure receives
+<code>-max_episode_steps</code>, not the partial return accumulated before failure.
+<code>frozen_steps</code>, <code>mean_frozen_steps</code>, <code>frozen_step_fraction</code>, and
+<code>mean_frozen_penalty</code> expose the exact aggregate contribution of unchanged-turn
+Actions to this score; they do not select or summarize trajectory content.</p>
+<p>Small batches have high procedural variance. First eliminate failures and
+frozen prompt loops, then compare unchanged candidates on equal larger batches.
+Use 1--4 Episodes per search submission until memory and runtime are measured.</p>
+<h2 id="use-feedback-safely">Use Feedback safely</h2>
+<p>Training Feedback includes aggregate scores plus complete raw evidence for all
+Episodes in that submission. Read <code>artifact-manifest.json</code>, then use its
+ordinals to align every <code>trajectory-*.jsonl.gz</code> transition with the exact
+Policy-visible observations in <code>observations-*.npz</code>. Open NPZ files with
+<code>numpy.load(..., allow_pickle=False)</code>. No Environment or Host code has already
+selected frames, created screenshots, rendered videos, or decided which
+segments are important.</p>
+<p>Choose your own analysis. You may decode terminal <code>chars</code> and <code>colors</code>, inspect
+glyphs or named stats, render selected observations with Pillow, export a
+segment with ImageIO, compare messages and inventory, or use another derived
+representation. Keep non-submitted scripts, selected frames, derived images,
+and notes under <code>analysis/</code>; only <code>program/</code> is submitted. Bulk evidence from
+older submissions can be evicted, while the newest complete submission is
+protected, so copy only the derived material you decide is useful before a
+later submission.</p>
+<p>Validation and Assessment are Host-only aggregate phases and publish no
+detailed Artifacts back to the workspace. Never attempt to recover hidden
+seeds, Host paths, ttyrec data, or privileged simulator state from Feedback.
+Treat small-batch score movement as noisy and use equal Episode counts when
+comparing candidates.</p>
+<p>Before <code>finish</code>, compare the candidate Program digests and the actual source
+changes you intended. Submit behaviorally distinct candidates that test real
+strategy alternatives. Renaming variables, retaining unused branches, or
+passing a flag that does not change reachable behavior wastes a Validation
+slot even though it creates a different source digest. Exact aggregate ties on
+the same hidden Validation Episodes are a reason to inspect candidate
+distinctness, not evidence that the Host should inspect or rewrite Programs.</p>
+<h2 id="iterate-in-stages">Iterate in stages</h2>
+<ol>
+<li>Submit the packaged baseline on a small batch and inspect the manifest.</li>
+<li>Select and decode the observations or trajectory segments needed to explain
+   failures and repeated behavior.</li>
+<li>Make prompt handling total and eliminate invalid Actions/timeouts.</li>
+<li>Add persistent dungeon-level map memory and loop detection.</li>
+<li>Improve frontier choice, door/search behavior, and staircase handling.</li>
+<li>Add HP, hunger, inventory, monster, and condition-aware interrupts.</li>
+<li>Remove behaviorally redundant candidates, then compare promising distinct
+   candidates with equal Validation budgets before final handoff.</li>
+</ol></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

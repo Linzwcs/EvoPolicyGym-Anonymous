@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Crafter · EvoPolicyGym</title><link rel="stylesheet" href="../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../docs/index.html">Documentation</a><a href="../../../../index.html#environments">Environments</a><a href="../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="crafter">Crafter</h1>
+<p>This ecosystem contains the independently installable EvoPolicyGym Benchmark
+distribution powered by <a href="https://github.com/danijar/crafter">Crafter</a>.</p>
+<ul>
+<li><code>crafter/</code> publishes two reward profiles over the pinned Crafter 1.8.3
+  simulator: the default long-horizon <code>lhs</code> objective
+  and the native <code>canonical</code> achievement objective.</li>
+<li>Both profiles support the original <code>64 x 64 x 3</code> RGB observation and the
+  explicitly selected, separately identified <code>local-symbolic-v1</code> observation.</li>
+<li>Training Feedback can contain complete compressed trajectories and lossless
+  Policy observations. Validation and held-out test Feedback remains
+  aggregate-only.</li>
+</ul>
+<p>The distribution is not included in the base EvoPolicyGym wheel. See
+<a href="crafter/README.html"><code>crafter/README.md</code></a> for its complete contract and local
+launcher.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Optimize a local-symbolic Crafter Policy · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../../docs/index.html">Documentation</a><a href="../../../../../../../index.html#environments">Environments</a><a href="../../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="optimize-a-local-symbolic-crafter-policy">Optimize a local-symbolic Crafter Policy</h1>
+<p>Develop one executable Policy for hidden procedural Crafter worlds. The
+observation removes RGB recognition and OCR, but it does not expose a global
+map, absolute position, seeds, achievement counters, action masks, or hidden
+creature and survival counters.</p>
+<h2 id="respect-the-abi">Respect the ABI</h2>
+<ul>
+<li>Export <code>make_policy(context)</code> from <code>policy.py</code> and return an object with
+  <code>act(observation)</code>.</li>
+<li>Return an exact integer Action from <code>0</code> through <code>16</code>.</li>
+<li>A fresh Policy is created for every Episode. Keep only Episode-local memory.</li>
+<li>The observation is a dictionary containing exactly <code>terrain</code>, <code>entities</code>,
+  <code>inventory</code>, <code>facing</code>, <code>sleeping</code>, and <code>daylight</code>.</li>
+<li><code>terrain</code> and <code>entities</code> are uint8 <code>TensorValue</code> values with shape <code>(7, 9)</code>.
+  Decode their bytes in row-major <code>[row, column]</code> order. The player is at
+  <code>[3, 4]</code>; rows increase downward and columns increase rightward.</li>
+</ul>
+<h2 id="symbol-tables">Symbol tables</h2>
+<p>Terrain IDs are:</p>
+<pre><code class="language-text">0 unknown/outside  1 water  2 grass  3 stone  4 path  5 sand  6 tree
+7 lava  8 coal  9 iron  10 diamond  11 table  12 furnace
+</code></pre>
+<p>Entity IDs are:</p>
+<pre><code class="language-text">0 none  1 player  2 cow  3 zombie  4 skeleton
+5 arrow-left  6 arrow-right  7 arrow-up  8 arrow-down
+9 young plant  10 ripe plant  11 fence
+</code></pre>
+<p><code>inventory</code> has named exact integer counts for health, food, drink, energy,
+sapling, wood, stone, coal, iron, diamond, and the three pickaxes and swords.
+<code>facing</code> is <code>left</code>, <code>right</code>, <code>up</code>, or <code>down</code>; <code>sleeping</code> is bool and <code>daylight</code>
+is a float in <code>[0, 1]</code>.</p>
+<h2 id="actions-and-evidence">Actions and evidence</h2>
+<p>The unchanged Actions are:</p>
+<pre><code class="language-text">0 noop  1 left  2 right  3 up  4 down  5 do  6 sleep
+7 place_stone  8 place_table  9 place_furnace  10 place_plant
+11 make_wood_pickaxe  12 make_stone_pickaxe  13 make_iron_pickaxe
+14 make_wood_sword  15 make_stone_sword  16 make_iron_sword
+</code></pre>
+<p>Movement toward an occupied or blocked adjacent cell can change facing without
+changing position. <code>do</code> affects only the facing cell. Crafting still requires
+the ordinary resources and nearby facilities; no prerequisite-validity hint is
+provided.</p>
+<p>Build explicit Episode-local modules for local perception, relative world and
+landmark memory, survival maintenance, exploration, production dependencies,
+and combat/defense. Confirm progress from inventory and later observations
+rather than assuming an attempted Action succeeded. Use local observations to
+update an internally estimated position; never search for a hidden seed or
+write a fixed route for particular Episode indices.</p>
+<p>Training Feedback contains one compressed trajectory per Episode and lossless
+symbolic NPZ chunks. The NPZ arrays are <code>terrain</code>, <code>entities</code>, <code>inventory</code>,
+<code>facing</code>, <code>sleeping</code>, <code>daylight</code>, and <code>observation_indices</code>. Read
+<code>artifact-manifest.json</code> for inventory order, facing IDs, and alignment:</p>
+<pre><code class="language-text">observation[t] -&gt; action[t] -&gt; observation[t + 1]
+</code></pre>
+<p>Inspect failure modes across unseen training Episodes. Treat repeated local
+loops, stationary interaction spam, and unconfirmed crafting cycles as
+controller defects unless current state supplies a reason for them.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

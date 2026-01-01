@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid LockedRoom Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-lockedroom-benchmark">MiniGrid LockedRoom Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for
+<a href="https://minigrid.farama.org/environments/minigrid/LockedRoomEnv/">MiniGrid LockedRoom</a>.
+The Policy searches six rooms, follows the mission to the target-color key,
+unlocks the matching room, and reaches its goal.</p>
+<pre><code class="language-python">from minigrid_locked_room import LockedRoomBenchmark, baseline_program
+</code></pre>
+<p>The spec defines image axes and channels, view orientation, carried-key and
+compass encodings, the exact reward formula, and termination rules. Feedback
+and the bounded semantic trace separate the mission's target-key color from
+the key-room door color, and report key-room entry, key discovery/acquisition,
+target-door discovery/opening, goal discovery and entry, current front object,
+remaining horizon, failed interactions, observation novelty, ineffective
+Actions, and per-Action usage. Door statistics distinguish unique door colors
+opened from repeated open and close events. No seeds, private identity, or
+Host paths are published. The baseline uses public observations only. Long
+traces retain the first 128 and final 32 transitions, with retained and omitted
+coverage reported explicitly. Each traced observation also lists visible
+objects with their color and state.
+<code>ProcessExecution.unsafe()</code> is used only for trusted baseline tests and is not
+a sandbox.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

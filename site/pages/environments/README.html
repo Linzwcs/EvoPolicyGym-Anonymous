@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Environment distributions · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../docs/index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="environment-distributions">Environment distributions</h1>
+<p>Environment implementations are independently installable Benchmark
+distributions. This directory is organized by upstream ecosystem and then by
+upstream suite:</p>
+<pre><code class="language-text">environments/
+├── ale/
+│   └── atari/
+├── arcprize/
+│   └── arc_agi_3/
+├── atcoder/
+│   ├── ahc054/
+│   │   └── treants_forest/
+│   ├── ahc057/
+│   │   └── molecules/
+│   └── ahc058/
+│       └── apple_incremental_game/
+├── codechef/
+│   └── june18/
+│       └── warehouseman/
+├── crafter/
+│   └── crafter/
+├── dm_control/
+│   └── control_suite/
+├── gymnasium/
+│   ├── box2d/
+│   ├── classic_control/
+│   ├── mujoco/
+│   └── toy_text/
+├── gymnasium_robotics/
+│   └── robotics/
+├── highway_env/
+│   └── highway_env/
+├── jackdaw/
+│   └── balatro/
+├── jumanji/
+│   └── jumanji/
+├── metaworld/
+│   └── metaworld/
+├── minigrid/
+│   ├── babyai/
+│   └── minigrid/
+│       ├── blocked_unlock_pickup/
+│       ├── crossing/
+│       ├── ... 18 additional standard families ...
+│       └── wfc/
+├── nle/
+│   └── nethack/
+├── robosuite/
+│   └── robosuite/
+├── stable_retro/
+│   └── airstriker/
+└── vizdoom/
+    └── vizdoom/
+</code></pre>
+<p>Only leaf directories are Python projects. Collection directories do not own a
+<code>pyproject.toml</code>, lockfile, virtual environment, or combined dependency set.
+Each leaf distribution owns its simulator dependency, static Benchmark
+specification, deterministic Episode planning, Environment adapter, scoring,
+public Feedback, baseline Program, lockfile, and tests.</p>
+<p>The taxonomy describes source ownership and dependency provenance. It does not
+change public Python imports, distribution names, or Benchmark IDs.</p>
+<h2 id="audit-every-distribution">Audit every distribution</h2>
+<p>Use the repository audit command to discover every leaf project while pruning
+virtual environments, build outputs, and vendored upstream projects:</p>
+<pre><code class="language-console">uv run python scripts/audit_environments.py --list
+uv run python scripts/audit_environments.py --level smoke --jobs 4
+uv run python scripts/audit_environments.py --level full --jobs 2
+</code></pre>
+<p><code>smoke</code> performs a locked development sync and runs the distribution's test
+suite. Those tests own real reset/step, determinism, invalid-Action, Evaluation,
+and cleanup coverage appropriate to their upstream runtime. <code>full</code> mirrors the
+Environment CI contract by additionally running Ruff, strict mypy, and building
+the independent wheel and source distribution. Both levels continue across
+projects after a failure and return a nonzero status if any project fails.</p>
+<p>Use repository-relative shell-style patterns to audit a subset, or reuse
+already-synchronized virtual environments during rapid local checks:</p>
+<pre><code class="language-console">uv run python scripts/audit_environments.py \
+  --level smoke \
+  --skip-sync \
+  --project 'environments/gymnasium/classic_control/*'
+</code></pre>
+<p>The <a href="STATUS.html">integration ledger</a> records every planned environment,
+including exact task/profile coverage and the environments deferred because a
+multi-agent, Trial, browser, runtime, or redistributable-asset boundary is
+still absent.</p>
+<table>
+<thead>
+<tr>
+<th>Collection</th>
+<th>Distribution</th>
+<th>Import</th>
+<th>Benchmark ID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="arcprize/arc_agi_3/README.html">ARC Prize / ARC-AGI-3</a></td>
+<td><code>evopolicygym-benchmark-arc-agi-3</code></td>
+<td><code>arc_agi_3_benchmarks</code></td>
+<td><code>arcprize/ARC-AGI-3/{profile}/official-score-v1</code></td>
+</tr>
+<tr>
+<td><a href="atcoder/ahc054/README.html">AtCoder / AHC054</a></td>
+<td><code>evopolicygym-benchmark-treants-forest</code></td>
+<td><code>treants_forest</code></td>
+<td><code>atcoder/AHC054/TreantsForest/capped-mean-turns-v1</code></td>
+</tr>
+<tr>
+<td><a href="atcoder/ahc057/README.html">AtCoder / AHC057</a></td>
+<td><code>evopolicygym-benchmark-molecules</code></td>
+<td><code>molecules</code></td>
+<td><code>atcoder/AHC057/Molecules/mean-log-cost-score-v1</code></td>
+</tr>
+<tr>
+<td><a href="atcoder/ahc058/README.html">AtCoder / AHC058</a></td>
+<td><code>evopolicygym-benchmark-apple-incremental-game</code></td>
+<td><code>apple_incremental_game</code></td>
+<td><code>atcoder/AHC058/AppleIncrementalGame/mean-log2-score-v1</code></td>
+</tr>
+<tr>
+<td><a href="codechef/june18/README.html">CodeChef / June 2018</a></td>
+<td><code>evopolicygym-benchmark-warehouseman</code></td>
+<td><code>warehouseman</code></td>
+<td><code>codechef/WAREHOUS/Warehouseman/mean-normalized-cost-v1</code></td>
+</tr>
+<tr>
+<td><a href="crafter/README.html">Crafter</a></td>
+<td><code>evopolicygym-benchmark-crafter</code></td>
+<td><code>crafter_benchmarks</code></td>
+<td><code>crafter/CrafterReward-v1/{achievement-score-v1,long-horizon-development-v2,mean-survival-development-return-v3}</code></td>
+</tr>
+<tr>
+<td><a href="dm_control/control_suite/README.html">DeepMind Control Suite</a></td>
+<td><code>evopolicygym-benchmark-dm-control</code></td>
+<td><code>dm_control_benchmarks</code></td>
+<td><code>dm-control/{domain}/{task}/state/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/box2d/README.html">Gymnasium / Box2D</a></td>
+<td><code>evopolicygym-benchmark-bipedal-walker</code></td>
+<td><code>bipedal_walker</code></td>
+<td><code>gymnasium/BipedalWalker-v3/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/box2d/README.html">Gymnasium / Box2D</a></td>
+<td><code>evopolicygym-benchmark-car-racing</code></td>
+<td><code>car_racing</code></td>
+<td><code>gymnasium/CarRacing-v3/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/box2d/README.html">Gymnasium / Box2D</a></td>
+<td><code>evopolicygym-benchmark-lunar-lander</code></td>
+<td><code>lunar_lander</code></td>
+<td><code>gymnasium/LunarLander-v3/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/classic_control/README.html">Gymnasium / Classic Control</a></td>
+<td><code>evopolicygym-benchmark-cartpole</code></td>
+<td><code>cartpole</code></td>
+<td><code>gymnasium/CartPole-v1/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/classic_control/README.html">Gymnasium / Classic Control</a></td>
+<td><code>evopolicygym-benchmark-acrobot</code></td>
+<td><code>acrobot</code></td>
+<td><code>gymnasium/Acrobot-v1/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/classic_control/README.html">Gymnasium / Classic Control</a></td>
+<td><code>evopolicygym-benchmark-mountain-car</code></td>
+<td><code>mountain_car</code></td>
+<td><code>gymnasium/MountainCar-v0/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/classic_control/README.html">Gymnasium / Classic Control</a></td>
+<td><code>evopolicygym-benchmark-mountain-car-continuous</code></td>
+<td><code>mountain_car_continuous</code></td>
+<td><code>gymnasium/MountainCarContinuous-v0/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/classic_control/README.html">Gymnasium / Classic Control</a></td>
+<td><code>evopolicygym-benchmark-pendulum</code></td>
+<td><code>pendulum</code></td>
+<td><code>gymnasium/Pendulum-v1/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-ant</code></td>
+<td><code>ant</code></td>
+<td><code>gymnasium/Ant-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-half-cheetah</code></td>
+<td><code>half_cheetah</code></td>
+<td><code>gymnasium/HalfCheetah-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-hopper</code></td>
+<td><code>hopper</code></td>
+<td><code>gymnasium/Hopper-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-humanoid</code></td>
+<td><code>humanoid</code></td>
+<td><code>gymnasium/Humanoid-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-humanoid-standup</code></td>
+<td><code>humanoid_standup</code></td>
+<td><code>gymnasium/HumanoidStandup-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-inverted-double-pendulum</code></td>
+<td><code>inverted_double_pendulum</code></td>
+<td><code>gymnasium/InvertedDoublePendulum-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-inverted-pendulum</code></td>
+<td><code>inverted_pendulum</code></td>
+<td><code>gymnasium/InvertedPendulum-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-pusher</code></td>
+<td><code>pusher</code></td>
+<td><code>gymnasium/Pusher-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-reacher</code></td>
+<td><code>reacher</code></td>
+<td><code>gymnasium/Reacher-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-swimmer</code></td>
+<td><code>swimmer</code></td>
+<td><code>gymnasium/Swimmer-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/mujoco/README.html">Gymnasium / MuJoCo</a></td>
+<td><code>evopolicygym-benchmark-walker2d</code></td>
+<td><code>walker2d</code></td>
+<td><code>gymnasium/Walker2d-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/toy_text/README.html">Gymnasium / Toy Text</a></td>
+<td><code>evopolicygym-benchmark-blackjack</code></td>
+<td><code>blackjack</code></td>
+<td><code>gymnasium/Blackjack-v1/mean-reward-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/toy_text/README.html">Gymnasium / Toy Text</a></td>
+<td><code>evopolicygym-benchmark-cliff-walking</code></td>
+<td><code>cliff_walking</code></td>
+<td><code>gymnasium/CliffWalking-v1/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/toy_text/README.html">Gymnasium / Toy Text</a></td>
+<td><code>evopolicygym-benchmark-frozen-lake</code></td>
+<td><code>frozen_lake</code></td>
+<td><code>gymnasium/FrozenLake-v1/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium/toy_text/README.html">Gymnasium / Toy Text</a></td>
+<td><code>evopolicygym-benchmark-taxi</code></td>
+<td><code>taxi</code></td>
+<td><code>gymnasium/Taxi-v4/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="jackdaw/README.html">Jackdaw / Balatro</a></td>
+<td><code>evopolicygym-benchmark-balatro</code></td>
+<td><code>balatro</code></td>
+<td><code>jackdaw/Balatro/red-deck-white-stake/run-score-v3</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-doorkey</code></td>
+<td><code>minigrid_doorkey</code></td>
+<td><code>minigrid/DoorKey-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-keycorridor</code></td>
+<td><code>minigrid_keycorridor</code></td>
+<td><code>minigrid/KeyCorridor-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-memory</code></td>
+<td><code>minigrid_memory</code></td>
+<td><code>minigrid/Memory-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/blocked_unlock_pickup/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-blocked-unlock-pickup</code></td>
+<td><code>minigrid_blocked_unlock_pickup</code></td>
+<td><code>minigrid/BlockedUnlockPickup-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/crossing/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-crossing</code></td>
+<td><code>minigrid_crossing</code></td>
+<td><code>minigrid/Crossing-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/dist_shift/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-dist-shift</code></td>
+<td><code>minigrid_dist_shift</code></td>
+<td><code>minigrid/DistShift-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/dynamic_obstacles/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-dynamic-obstacles</code></td>
+<td><code>minigrid_dynamic_obstacles</code></td>
+<td><code>minigrid/DynamicObstacles-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/empty/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-empty</code></td>
+<td><code>minigrid_empty</code></td>
+<td><code>minigrid/Empty-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/fetch/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-fetch</code></td>
+<td><code>minigrid_fetch</code></td>
+<td><code>minigrid/Fetch-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/four_rooms/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-four-rooms</code></td>
+<td><code>minigrid_four_rooms</code></td>
+<td><code>minigrid/FourRooms-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/go_to_door/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-go-to-door</code></td>
+<td><code>minigrid_go_to_door</code></td>
+<td><code>minigrid/GoToDoor-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/go_to_object/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-go-to-object</code></td>
+<td><code>minigrid_go_to_object</code></td>
+<td><code>minigrid/GoToObject-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/lava_gap/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-lava-gap</code></td>
+<td><code>minigrid_lava_gap</code></td>
+<td><code>minigrid/LavaGap-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/locked_room/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-locked-room</code></td>
+<td><code>minigrid_locked_room</code></td>
+<td><code>minigrid/LockedRoom-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/multiroom/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-multiroom</code></td>
+<td><code>minigrid_multiroom</code></td>
+<td><code>minigrid/MultiRoom-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/obstructed_maze/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-obstructed-maze</code></td>
+<td><code>minigrid_obstructed_maze</code></td>
+<td><code>minigrid/ObstructedMaze-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/playground/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-playground</code></td>
+<td><code>minigrid_playground</code></td>
+<td><code>minigrid/Playground-v0/room-coverage-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/put_near/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-put-near</code></td>
+<td><code>minigrid_put_near</code></td>
+<td><code>minigrid/PutNear-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/red_blue_doors/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-red-blue-doors</code></td>
+<td><code>minigrid_red_blue_doors</code></td>
+<td><code>minigrid/RedBlueDoors-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/unlock/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-unlock</code></td>
+<td><code>minigrid_unlock</code></td>
+<td><code>minigrid/Unlock-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/unlock_pickup/README.html">MiniGrid / MiniGrid</a></td>
+<td><code>evopolicygym-benchmark-minigrid-unlock-pickup</code></td>
+<td><code>minigrid_unlock_pickup</code></td>
+<td><code>minigrid/UnlockPickup-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/minigrid/wfc/README.html">MiniGrid / WFC</a></td>
+<td><code>evopolicygym-benchmark-minigrid-wfc</code></td>
+<td><code>minigrid_wfc</code></td>
+<td><code>minigrid/WFC-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="minigrid/babyai/README.html">MiniGrid / BabyAI</a></td>
+<td><code>evopolicygym-benchmark-minigrid-babyai</code></td>
+<td><code>minigrid_babyai</code></td>
+<td><code>minigrid/BabyAI-{family}-v0/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="highway_env/highway_env/README.html">HighwayEnv</a></td>
+<td><code>evopolicygym-benchmark-highway-env</code></td>
+<td><code>highway_benchmarks</code></td>
+<td><code>highway-env/{environment_id}/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="jumanji/jumanji/README.html">Jumanji</a></td>
+<td><code>evopolicygym-benchmark-jumanji</code></td>
+<td><code>jumanji_benchmarks</code></td>
+<td><code>jumanji/{environment_id}/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="gymnasium_robotics/robotics/README.html">Gymnasium-Robotics</a></td>
+<td><code>evopolicygym-benchmark-gymnasium-robotics</code></td>
+<td><code>robotics_benchmarks</code></td>
+<td><code>gymnasium-robotics/{environment_id}/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="metaworld/metaworld/README.html">MetaWorld</a></td>
+<td><code>evopolicygym-benchmark-metaworld</code></td>
+<td><code>metaworld_benchmarks</code></td>
+<td><code>metaworld/{collection}/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="nle/nethack/README.html">NLE / NetHack</a></td>
+<td><code>evopolicygym-benchmark-nle-nethack</code></td>
+<td><code>nle_benchmarks</code></td>
+<td><code>nle/NetHackScore-v0/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="robosuite/robosuite/README.html">robosuite</a></td>
+<td><code>evopolicygym-benchmark-robosuite</code></td>
+<td><code>robosuite_benchmarks</code></td>
+<td><code>robosuite/{environment_id}/panda-state/success-rate-v1</code></td>
+</tr>
+<tr>
+<td><a href="ale/atari/README.html">ALE Atari</a></td>
+<td><code>evopolicygym-benchmark-atari</code></td>
+<td><code>atari_benchmarks</code></td>
+<td><code>ale/Tetris-v5/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="vizdoom/vizdoom/README.html">ViZDoom</a></td>
+<td><code>evopolicygym-benchmark-vizdoom</code></td>
+<td><code>vizdoom_benchmarks</code></td>
+<td><code>vizdoom/{environment_id}/mean-return-v1</code></td>
+</tr>
+<tr>
+<td><a href="stable_retro/airstriker/README.html">Stable-Retro</a></td>
+<td><code>evopolicygym-benchmark-airstriker</code></td>
+<td><code>airstriker</code></td>
+<td><code>stable-retro/Airstriker-Genesis-v0/mean-score-delta-v1</code></td>
+</tr>
+</tbody>
+</table>
+<p>From the repository root, select one leaf project explicitly:</p>
+<pre><code class="language-console">uv sync --project environments/gymnasium/classic_control/cartpole --extra dev
+uv build environments/gymnasium/classic_control/cartpole
+</code></pre>
+<p>Future Gymnasium suites belong beside <code>box2d/</code>, <code>classic_control/</code>, <code>mujoco/</code>,
+and <code>toy_text/</code>, not beside individual environments.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

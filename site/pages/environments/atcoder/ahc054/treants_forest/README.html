@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Treant&#x27;s Forest Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-treants-forest-benchmark">EvoPolicyGym Treant's Forest Benchmark</h1>
+<p>This independently installable distribution implements the interactive rules
+of <a href="https://atcoder.jp/contests/ahc054/tasks/ahc054_a">AtCoder Heuristic Contest 054 A, Treant's Forest</a>. It depends only on
+the public EvoPolicyGym SDK.</p>
+<p>The Policy places permanent Treants on unseen empty cells before each
+adventurer move. A placement set is rejected atomically if a coordinate is
+duplicate, out of bounds, already revealed, occupied, contains the flower, or
+disconnects either the entrance or the adventurer from the flower. The
+adventurer then reveals sight lines, selects a private target, and follows a
+deterministic shortest path using the official up, down, left, right tie-break.</p>
+<h2 id="independent-implementation">Independent implementation</h2>
+<p>The package uses the public task specification as the authority for game
+semantics. Its simulator, deterministic case generator, tests, and baseline
+were written independently for EvoPolicyGym. It contains no AtCoder statement
+text, source code, generated inputs, seeds, submissions, visualizer, or other
+assets. The official downloadable tool archive does not declare a software
+license and is not a dependency or redistributed component.</p>
+<p>Cases follow the published size, obstacle-connectivity, and flower-distance
+distribution using an EvoPolicyGym-owned version-stable random stream. Private
+target order and Episode seeds never cross the Policy boundary.</p>
+<h2 id="policy-interface">Policy interface</h2>
+<p>The first observation contains the forest size, entrance, flower, initial tree
+coordinates, adventurer position, and the initially revealed entrance.
+Subsequent observations contain the new adventurer position and cells revealed
+by the preceding turn. Same-Episode Policy state can retain the initial map and
+all prior placements.</p>
+<p>One Action has exactly this shape:</p>
+<pre><code class="language-python">{&quot;placements&quot;: [[row, column], ...]}
+</code></pre>
+<p>An empty list places no Treants and is always the safe baseline Action.</p>
+<p>The score is mean adventurer movement count, capped at 2,048 turns per Episode.
+Each valid turn earns one point; reaching the cap is a normal truncation and a
+Policy failure contributes zero. Feedback publishes aggregate outcomes and a
+bounded semantic <code>trace.jsonl</code> Artifact. Per-turn diagnostics include accepted
+placement count, reveal gain and coverage, remaining legal candidate cells,
+flower discovery, Manhattan and actual shortest-path distance to the public
+flower, path-length change, revisits, unique adventurer positions, remaining
+turns, and score so far. These values are derived from the public initial map
+and accepted Policy placements; the adventurer's private target is never
+reported.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/atcoder/ahc054/treants_forest
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by the Evaluation tests is explicitly unsafe and
+provides no isolation. The test Program is a trusted package fixture.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

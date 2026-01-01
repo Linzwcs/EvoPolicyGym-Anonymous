@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid BlockedUnlockPickup Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-blockedunlockpickup-benchmark">MiniGrid BlockedUnlockPickup Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/BlockedUnlockPickupEnv/">MiniGrid BlockedUnlockPickup</a>
+long-horizon manipulation task.</p>
+<p>The Policy must move the ball obstructing a locked door, acquire the
+matching-color key, unlock the second room, and pick up the mission box.
+The spec defines image axes and channels, view orientation, carried-object and
+compass encodings, the exact reward formula, and termination rules. Feedback
+and the bounded semantic <code>trace.jsonl</code> expose the Policy-visible progress
+ladder: first discovery of the blocker, key, door, and target; blocker pickup
+and drop; key pickup and drop; door opening; current carried and front objects;
+failed pickup/drop/toggle attempts; remaining horizon; observation novelty;
+ineffective Actions; and per-Action usage. It also reports the irreversible
+case where <code>toggle</code> is applied to the mission box: MiniGrid destroys the box
+without terminating the Episode. No Episode seed, private identity, or Host
+path is published.</p>
+<pre><code class="language-python">from minigrid_blocked_unlock_pickup import (
+    BlockedUnlockPickupBenchmark,
+    baseline_program,
+)
+
+benchmark = BlockedUnlockPickupBenchmark()
+program = baseline_program()
+</code></pre>
+<p>The packaged baseline builds a relative map from Policy-visible observations
+and implements the complete object-moving and unlocking state machine. Tests
+using <code>ProcessExecution.unsafe()</code> execute trusted packaged code only; that
+backend is not a sandbox.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

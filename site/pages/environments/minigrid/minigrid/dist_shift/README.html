@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid DistShift Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-distshift-benchmark">MiniGrid DistShift Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for both MiniGrid
+<code>DistShift</code> registrations.</p>
+<pre><code class="language-python">from minigrid_dist_shift import DistShiftBenchmark, DistShiftConfig
+
+benchmark = DistShiftBenchmark(DistShiftConfig(profile=&quot;shift1&quot;))
+</code></pre>
+<p>The Policy must reach the goal without entering lava under the selected
+distribution-shift layout. The spec defines image axes
+<code>[view_x, view_y, channel]</code>, channels <code>[object, color, state]</code>, the agent at
+<code>(3,6)</code>, view orientation, compass and symbolic encodings, the exact
+time-decaying reward, and every terminal condition.</p>
+<p>Feedback distinguishes seeing lava from entering it, and reports when lava
+and the goal were first seen, remaining horizon, observation novelty,
+ineffective Actions, per-Action usage, success, timeout, and Policy-failure
+outcomes. In particular, it identifies Episodes where the visible goal was
+never reached. The bounded semantic trace contains no seeds, private identity,
+or Host paths.
+Long traces retain the first 128 and final 32 transitions, with retained and
+omitted coverage reported explicitly. Each traced observation also lists
+visible objects with their color and state.
+The packaged baseline never moves into an unknown or observed obstacle cell.
+Trusted baseline tests use <code>ProcessExecution.unsafe()</code>, which is not a sandbox.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

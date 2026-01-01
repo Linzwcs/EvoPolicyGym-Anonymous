@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Reusable Balatro strategy lessons · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="reusable-balatro-strategy-lessons">Reusable Balatro strategy lessons</h1>
+<p>Apply these lessons as model invariants, not as a list of named encounter
+patches.</p>
+<h2 id="couple-scoring-to-the-decision-horizon">Couple scoring to the decision horizon</h2>
+<ul>
+<li>A more exact immediate hand score can make a myopic selector worse. Whenever
+  scoring changes, test the play/discard choice and remaining-hands horizon,
+  not calibration alone.</li>
+<li>Separate base Chips/Mult, scored-card triggers, held-card triggers, main
+  additive Mult, and main XMult into resolution phases. Reorder only effects
+  whose phase and dependency are modeled.</li>
+<li>Use <code>last_hand</code> to find systematic prediction error on development replays.
+  Prioritize effects that occur often enough to change decisions.</li>
+<li>Treat unknown effects as uncertainty. Do not silently score them as zero.</li>
+</ul>
+<h2 id="preserve-information-boundaries">Preserve information boundaries</h2>
+<ul>
+<li>Face-down cards with missing rank or suit are unknown, not equal. Never form
+  a Pair, Flush group, or deterministic out from shared <code>None</code> values.</li>
+<li>Draw-pile composition supports probabilities, not future-card prediction.</li>
+<li>Keep all indices ephemeral and rebuild intents from the current observation.</li>
+</ul>
+<h2 id="optimize-draw-throughput-safely">Optimize draw throughput safely</h2>
+<ul>
+<li>Compare discard value with playing a nonlethal hand when extra played cards
+  can cycle weak kickers and improve the next draw.</li>
+<li>Add kickers only when they are legal, unmodified low-value junk, outside the
+  scoring hand and valuable draws, and enough future hands remain.</li>
+<li>Guard throughput changes by Ante, remaining hands/discards, Blind deficit,
+  Boss rules, and score confidence. Broad early activation creates severe
+  regressions.</li>
+</ul>
+<h2 id="plan-the-build-and-shop-jointly">Plan the build and shop jointly</h2>
+<ul>
+<li>Value a Joker by marginal survival and growth in the current build, not by a
+  standalone tier. Include role coverage, activation rate, scaling horizon,
+  slot opportunity cost, sell proceeds, interest, and replacement sequence.</li>
+<li>When slots are full and cash is safely above reserve, a bounded paid reroll
+  can search for upgrades. Record rerolls per shop and cap them.</li>
+<li>A purchase rule that never triggers is not an optimization. Count eligible
+  shops and changed decisions before evaluating it.</li>
+<li>Conservative Planet and consumable use is safer than speculative targets,
+  but behavior-neutral safety code is not evidence of strength.</li>
+</ul>
+<h2 id="handle-joker-order-as-a-dependency-problem">Handle Joker order as a dependency problem</h2>
+<ul>
+<li>Put main-stage additive Mult before main-stage XMult when no other dependency
+  overrides that order.</li>
+<li>Treat Blueprint, Brainstorm, retriggers, per-card effects, and multi-copy
+  chains as explicit dependency graphs. Do not apply a generic sort while copy
+  semantics are unresolved.</li>
+<li>Move at most one adjacent inversion per observation unless action semantics
+  guarantee an atomic full reorder.</li>
+</ul>
+<h2 id="learn-correctly-from-failures">Learn correctly from failures</h2>
+<ul>
+<li>Diagnose only from submissions assigned to baseline, diagnosis, or capability
+  development. Frozen-confirmation regression tells you to reject or reorder a
+  shortlist, not how to patch.</li>
+<li>Prefer a narrow guarded capability that holds up across several fresh
+  submissions over a broad rule with a larger pooled mean and catastrophic
+  early regressions.</li>
+<li>Separate engineering correctness, average survival, late-tail reach, and win
+  rate. A change may improve one without demonstrating another.</li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Contributing · EvoPolicyGym</title><link rel="stylesheet" href="../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="docs/index.html">Documentation</a><a href="../../index.html#environments">Environments</a><a href="REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="contributing">Contributing</h1>
+<p>Contributions of all sizes are welcome, including new interactive environment
+integrations, Kernel improvements, documentation, tests, and representative
+test data.</p>
+<h2 id="contribute-with-coding-agents">Contribute with coding agents</h2>
+<p>We recommend using a coding agent to contribute to EvoPolicyGym. Claude Code
+and Codex can use the repository's
+<a href="../../skills/evopolicygym"><code>evopolicygym</code> Agent Skill</a> for project-specific
+guidance on Benchmark authoring, provider integration, Run diagnostics, and
+Kernel development. Ask the agent to read the Skill and the repository
+instructions before it starts making changes.</p>
+<h2 id="development-setup">Development setup</h2>
+<p>EvoPolicyGym requires Python 3.12 and uses <code>uv</code>.</p>
+<pre><code class="language-console">uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+</code></pre>
+<h2 id="project-boundaries">Project boundaries</h2>
+<p>The supported package lives under <code>src/evopolicygym/</code>. External Benchmark
+distributions integrate only through <code>evopolicygym.authoring</code>; the active
+CartPole example lives under
+<code>environments/gymnasium/classic_control/cartpole/</code>.</p>
+<p>Follow the ownership and import rules in <code>ARCHITECTURE.md</code>. Keep concrete I/O
+out of pure Evaluation and Program-Evolution rule modules, keep <code>_protocol</code>
+pure, keep provider-neutral process mechanisms under <code>execution/process</code>,
+and do not add compatibility namespaces for removed implementations.</p>
+<p><code>ProcessExecution</code> is intentionally unsafe for hostile code. Changes involving
+runtime semantics must test typed failure behavior and cleanup paths.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

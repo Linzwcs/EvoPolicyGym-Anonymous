@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Policy · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h2 id="program-entry-point">Program entry point</h2>
+<p>Every Program directory must contain <code>policy.py</code>. The fixed entry point is
+<code>policy.py:make_policy</code>:</p>
+<pre><code class="language-python">from evopolicygym.policy import PolicyContext, PolicyValue
+
+
+class MyPolicy:
+    def __init__(self, context: PolicyContext):
+        self._seed = context.policy_seed
+
+    def act(self, observation: PolicyValue) -&gt; PolicyValue:
+        return 0
+
+
+def make_policy(context: PolicyContext) -&gt; MyPolicy:
+    return MyPolicy(context)
+</code></pre>
+<p><code>make_policy(context)</code> runs once for each Episode. The returned object must
+provide <code>act(observation)</code>.</p>
+<p>There is no Policy-visible <code>learn()</code>, <code>reset()</code>, <code>update()</code>, Submission, or
+Feedback method.</p>
+<h2 id="policycontext">PolicyContext</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>observation_space</code></td>
+<td>Public description of Policy-visible observations.</td>
+</tr>
+<tr>
+<td><code>action_space</code></td>
+<td>Public description of admissible Actions.</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>String-keyed, Case-independent Benchmark metadata.</td>
+</tr>
+<tr>
+<td><code>environment_parameters</code></td>
+<td>Public, Case-independent values bound to the configured Environment.</td>
+</tr>
+<tr>
+<td><code>policy_seed</code></td>
+<td>An unsigned 64-bit seed for this fresh Policy instance.</td>
+</tr>
+</tbody>
+</table>
+<p><code>PolicyContext</code> never contains Case identity, Environment seed, Host paths,
+file descriptors, credentials, pool identity, scores, runtime evidence, or
+scorer objects.</p>
+<h2 id="policyvalue">PolicyValue</h2>
+<p>Values crossing the Policy boundary must be composed only from:</p>
+<pre><code class="language-text">None | bool | int | float | str | bytes
+| TensorValue
+| list[PolicyValue]
+| tuple[PolicyValue, ...]
+| dict[str, PolicyValue]
+</code></pre>
+<p>The rules are strict:</p>
+<ul>
+<li>floats must be finite;</li>
+<li>integers must fit signed or unsigned 64-bit;</li>
+<li>mapping keys must be exact strings;</li>
+<li>containers are validated and detached recursively;</li>
+<li>custom Python objects and pickle graphs are rejected.</li>
+</ul>
+<h2 id="tensorvalue">TensorValue</h2>
+<p><code>TensorValue</code> carries a canonical dense tensor:</p>
+<pre><code class="language-python">from evopolicygym.policy import TensorValue
+
+pixels = TensorValue(
+    dtype=&quot;uint8&quot;,
+    shape=(84, 84, 3),
+    data=raw_rgb_bytes,
+)
+</code></pre>
+<p>Supported dtypes are <code>bool</code>, unsigned and signed integers from 8 to 64 bits,
+and <code>float16</code>, <code>float32</code>, and <code>float64</code>. Multibyte values are little-endian,
+floating values must be finite, and the byte length must exactly match the
+shape and dtype.</p>
+<h2 id="episode-local-state">Episode-local state</h2>
+<pre><code class="language-text">Episode 0  new process → make_policy() → act() × N → destroy
+Episode 1  new process → make_policy() → act() × N → destroy
+Episode N  new process → make_policy() → act() × N → destroy
+</code></pre>
+<p>A Policy may retain history, recurrent state, search trees, caches, or
+temporary parameters between <code>act()</code> calls in the same Episode. No state
+crosses into another Episode.</p>
+<p>Cross-Episode learning belongs to the outer Coding Agent, which authors and
+submits a new immutable Program.</p>
+<h2 id="action-semantics">Action semantics</h2>
+<p>The Environment receives the complete, unmodified Action returned by
+<code>Policy.act()</code>.</p>
+<pre><code class="language-text">Policy.act(observation)
+        ↓
+PolicyValue validation
+        ↓
+Environment.step(action)
+        ├── valid   → trusted Step
+        └── invalid → InvalidAction
+                       Policy failure; no fallback step
+</code></pre>
+<p>Invalid Actions are never clipped, repaired, sampled, or replaced.</p>
+<h2 id="policy-failures">Policy failures</h2>
+<p>The public Policy failure codes are:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>exception</code></td>
+<td><code>make_policy()</code> or <code>act()</code> raised.</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td>The Policy exceeded its Episode operation timeout.</td>
+</tr>
+<tr>
+<td><code>invalid_action</code></td>
+<td>The Environment rejected the complete Action.</td>
+</tr>
+<tr>
+<td><code>protocol_error</code></td>
+<td>The Policy process returned a malformed or unencodable value.</td>
+</tr>
+</tbody>
+</table>
+<p>After Policy failure, the evaluator does not call <code>Environment.step()</code> again.
+Trusted Environment and execution faults remain separate and abort Evaluation.</p>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="evaluation.html">Evaluation →</a></li>
+<li><a href="runs.html">Coding Agent Runs →</a></li>
+<li><a href="runtime.html">Execution and safety →</a></li>
+<li><a href="../../../src/evopolicygym/policy.py">Read <code>policy.py</code> source ↗</a></li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

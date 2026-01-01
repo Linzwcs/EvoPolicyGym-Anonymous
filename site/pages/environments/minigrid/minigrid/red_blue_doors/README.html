@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid RedBlueDoors Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-redbluedoors-benchmark">MiniGrid RedBlueDoors Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/RedBlueDoorEnv/">MiniGrid RedBlueDoors</a>
+ordered interaction task.</p>
+<p>The Policy receives the upstream egocentric symbolic observation and must open
+the red door before opening the blue door. The red door must still be open
+immediately before the blue-door Action: opening blue first, or opening red,
+closing it again, and then opening blue, ends the Episode with zero reward.
+Available profiles are <code>6x6</code> and <code>8x8</code>; the Host selects one before a Run and
+it contributes to the environment digest.</p>
+<pre><code class="language-python">from minigrid_red_blue_doors import (
+    RedBlueDoorsBenchmark,
+    RedBlueDoorsConfig,
+    baseline_program,
+)
+
+benchmark = RedBlueDoorsBenchmark(RedBlueDoorsConfig(profile=&quot;8x8&quot;))
+program = baseline_program()
+</code></pre>
+<p>The spec defines image axes and channels, view orientation, compass and
+symbolic encodings, exact reward, and terminal conditions. Feedback exposes
+the full ordered funnel: first seeing each door, opening red, reclosing red,
+opening blue, and succeeding. It distinguishes blue-before-red from
+blue-after-red-was-reclosed, reports the current task stage, remaining horizon,
+observation novelty, ineffective Actions, per-Action usage, truncation, and
+Policy failures. The bounded <code>trace.jsonl</code> publishes the same semantic evidence
+without seeds, private identity, or Host paths.</p>
+<p>The packaged baseline uses only public observations to map the central room
+and plans to the red and blue doors in mission order.</p>
+<p>Tests using <code>ProcessExecution.unsafe()</code> execute trusted packaged code only.
+That backend is a local process mechanism, not a sandbox.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid DynamicObstacles Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-dynamicobstacles-benchmark">MiniGrid DynamicObstacles Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/DynamicObstaclesEnv/">MiniGrid DynamicObstacles</a>
+navigation task.</p>
+<p>The Policy receives the upstream <code>7 × 7 × 3</code> egocentric symbolic image,
+compass direction, and fixed mission. It must reach the green goal while grey
+balls move locally before every action. The only valid actions are left,
+right, and forward. The upstream environment checks the cell ahead, moves the
+balls, then applies the Action; trying to move forward into any cell that was
+occupied by a non-goal object ends the Episode with reward <code>-1</code>. This includes
+both a grey ball and a wall. The primary score is mean upstream Episode return;
+success rate remains separately reported.</p>
+<h2 id="install-and-test">Install and test</h2>
+<p>From the EvoPolicyGym repository root:</p>
+<pre><code class="language-console">uv sync --project environments/minigrid/minigrid/dynamic_obstacles --extra dev
+uv run --project environments/minigrid/minigrid/dynamic_obstacles \
+  python -m unittest discover \
+  -s environments/minigrid/minigrid/dynamic_obstacles/tests
+uv build environments/minigrid/minigrid/dynamic_obstacles
+</code></pre>
+<h2 id="public-api">Public API</h2>
+<pre><code class="language-python">from minigrid_dynamic_obstacles import (
+    DynamicObstaclesBenchmark,
+    DynamicObstaclesConfig,
+    baseline_program,
+)
+
+benchmark = DynamicObstaclesBenchmark(
+    DynamicObstaclesConfig(profile=&quot;8x8-N4&quot;),
+)
+program = baseline_program()
+</code></pre>
+<p>Available profiles are <code>5x5-N2</code>, <code>5x5-N2-random</code>, <code>6x6-N3</code>,
+<code>6x6-N3-random</code>, <code>8x8-N4</code>, and <code>16x16-N8</code>. A profile is selected by the Host
+before a Run and contributes to the environment digest.</p>
+<p>The spec defines the image axes, channel order, view orientation, compass and
+symbolic encodings, obstacle update order, exact reward formula, and terminal
+conditions. Feedback separates ball collisions from wall collisions and
+records which Policy-visible object was ahead before every Action. It also
+reports first-seen steps for the goal and obstacles, obstacle exposure,
+remaining horizon, observation novelty, ineffective Actions, per-Action
+usage, success, timeout, and Policy failures. <code>trace.jsonl</code> contains a bounded
+semantic trace for at most four Episodes, retaining the first 128 and last 32
+transitions of long Episodes. It contains no Episode seed, private Case
+identity, or Host path.</p>
+<p>The packaged baseline builds a relative map from public observations and
+replans each step. It moves forward only when no currently visible obstacle
+can enter the destination in one upstream motion update. It consumes no
+private environment state.</p>
+<p>Tests that use <code>ProcessExecution.unsafe()</code> run trusted packaged code only.
+That backend is a local process mechanism, not a sandbox and not suitable for
+hostile Programs.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

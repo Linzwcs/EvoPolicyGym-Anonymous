@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Pusher Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-pusher-benchmark">EvoPolicyGym Pusher Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Pusher-v5</code>
+through EvoPolicyGym's public authoring SPI and official packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from pusher import PusherBenchmark, PusherConfig, baseline_program
+
+benchmark = PusherBenchmark(
+    PusherConfig(
+        frame_skip=5,
+        reward_near_weight=0.5,
+        reward_dist_weight=1.0,
+        reward_control_weight=0.1,
+    )
+)
+</code></pre>
+<p>Simulation cadence, actuator gears, reward formulas, reset geometry, and reward weights are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. Gymnasium's official <code>pusher_v5.xml</code> model
+is fixed. Custom XML paths and rendering/camera settings are Host-owned and
+never cross the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The Policy receives 23 unclipped <code>float64</code>-derived values:</p>
+<ul>
+<li>seven arm joint angles and seven angular velocities;</li>
+<li>fingertip x/y/z position;</li>
+<li>movable object x/y/z position;</li>
+<li>goal x/y/z position.</li>
+</ul>
+<p>An Action is an exact seven-float list of shoulder, arm, elbow, forearm, and
+wrist torques in newton-meters, each in <code>[-2.0, 2.0]</code>. The official actuators
+all have gear <code>1</code>, so controls are used directly. Integers, tuples, non-finite
+values, and out-of-range values are rejected rather than converted or clipped.</p>
+<p>The model timestep is <code>0.01</code> seconds; default <code>frame_skip=5</code> advances <code>0.05</code>
+simulated seconds per Policy step. Pusher never terminates naturally and
+truncates after 100 steps. Each reward is the negative weighted object-goal
+distance, fingertip-object distance, and squared action norm, all measured
+after the physics step. The scalar Benchmark score is mean Episode return;
+Gymnasium publishes a solution threshold of <code>0.0</code>.</p>
+<p>Policy failure receives a configuration-scaled return no greater than <code>-1000</code>.
+The packaged baseline applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback separates reaching from pushing. It reports initial, final, best, and
+worst object-goal distance; distance reduction and remaining fraction; final
+and minimum fingertip-object distance; object displacement; action effort;
+cumulative distance, near, and control rewards; outcome counts; Policy
+failures; and bounded trace coverage. This makes it visible when a Policy
+improves reward only by bringing the fingertip closer without moving the
+object toward the goal.</p>
+<p><code>trace.jsonl</code> retains at most eight Episodes with complete observations, exact
+named torque components, timing and remaining horizon, displacement and
+direction vectors, running distance extrema, action magnitude, all current and
+cumulative reward terms, and explicit terminal reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/pusher
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

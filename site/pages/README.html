@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym — Anonymous Review Artifact · EvoPolicyGym</title><link rel="stylesheet" href="../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="docs/index.html">Documentation</a><a href="../../index.html#environments">Environments</a><a href="REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-anonymous-review-artifact">EvoPolicyGym — Anonymous Review Artifact</h1>
+<p>This repository contains the v0.3.0 implementation supplied for peer review.
+It provides a standardized evaluation protocol and a unified interface to
+interactive environments for coding agents that evolve executable policies.
+This snapshot does not include historical paper experiments or their results.</p>
+<p>See the <a href="docs/index.html">local documentation</a> and <a href="REVIEW.html">review guide</a>.</p>
+<h2 id="what-it-measures">What it measures</h2>
+<ol>
+<li><strong>Write</strong> a complete executable Policy.</li>
+<li><strong>Experiment</strong> within a fixed Episode budget.</li>
+<li><strong>Learn</strong> from bounded, public Feedback.</li>
+<li><strong>Publish</strong> candidates before private evaluation begins.</li>
+<li><strong>Generalize</strong> when the Host selects on Validation and assesses only the
+   selected Program on held-out Episodes.</li>
+</ol>
+<p>EvoPolicyGym brings heterogeneous interactive environments under a common
+Benchmark contract and records the complete trajectory of Programs,
+Submissions, Feedback, selection, and outcomes. Reproducible Runs support both
+fair Agent evaluation and rollout datasets for RL and other post-training
+methods.</p>
+<h2 id="how-it-works">How it works</h2>
+<pre><code class="language-mermaid">flowchart LR
+    Agent([&quot;Agent&quot;])
+    Workspace[(&quot;Workspace&quot;)]
+    Server([&quot;Server&quot;])
+
+    Agent -- &quot;① edit program/&quot; --&gt; Workspace
+    Agent -- &quot;② POST /submit n eps&quot; --&gt; Server
+    Server -- &quot;③ exec + write feedback&lt;br/&gt;budget -= n&quot; --&gt; Workspace
+    Workspace -- &quot;④ analyze feedback&quot; --&gt; Agent
+</code></pre>
+<p>The Agent can edit the Program, inspect public Feedback, and submit or finish
+through its scoped Session client. The Host owns the Episode pool, budget,
+Evaluation lifecycle, private final selection, and retained evidence.
+The Unix-socket listener only transports framed requests; the calling Host
+coordinator thread performs Environment evaluation and Feedback publication.
+CLI Runs therefore keep renderers that require macOS main-thread access off
+the transport listener thread.
+The Host task declares <code>evopolicygym-session submit</code> as the Agent's only
+authorized Benchmark Environment interaction path; directly running a local
+Benchmark implementation, environment provider, simulator, ROM, or equivalent
+mechanism is forbidden and does not constitute a budgeted experiment.</p>
+<h3 id="active-experimentation-under-a-budget">Active experimentation under a budget</h3>
+<p>Every Run gives the Agent a fixed Episode budget and a deterministic pool of
+selectable Episode identities. The Agent actively allocates this budget
+between exploration, comparison, and confirmation. Reusing an Episode index
+enables a matched comparison between Programs, but every use creates a fresh
+Environment and Policy runtime and consumes another budget unit. The
+underlying scenarios and seeds remain Host-owned. Validation and Assessment
+use separate private allocations after the Agent has finished.</p>
+<p>Episode budget makes interaction efficiency comparable within one Benchmark;
+it is not a cross-Benchmark measure of compute cost.</p>
+<p>When <code>max_submissions</code> is omitted, it defaults to <code>episode_budget</code>. This keeps
+single-Episode experiments from exhausting Submission authority before the
+Episode budget. Set it explicitly only when a Run needs a tighter limit on
+distinct candidate evaluations.</p>
+<p><code>RunConfig.finish_budget_policy</code> controls whether the Agent may hand candidates
+to the Host before using every Episode unit. The default, <code>allow_early</code>, keeps
+the budget as a maximum and lets the Agent stop when further experimentation is
+not worthwhile. <code>require_budget_exhaustion</code> turns it into a required allocation:
+an early <code>finish</code> returns <code>budget_remaining</code> without closing Agent authority,
+and the Agent must continue submitting until <code>episodes_remaining</code> reaches zero.
+The strict policy also rejects submission sizes that would make full budget
+use impossible within the remaining Submission limit.</p>
+<h2 id="quickstart">Quickstart</h2>
+<p>EvoPolicyGym requires Python 3.12 and
+<a href="https://docs.astral.sh/uv/"><code>uv</code></a> 0.11.16. Open the extracted review repository and install the
+independent CartPole Benchmark:</p>
+<pre><code class="language-console"># From the extracted review archive:
+cd anonymous-policy-benchmark
+uv sync --project environments/gymnasium/classic_control/cartpole --extra dev
+</code></pre>
+<p>Run one deterministic Evaluation of its packaged baseline:</p>
+<pre><code class="language-console">uv run --project environments/gymnasium/classic_control/cartpole python - &lt;&lt;'PY'
+from cartpole import CartPoleBenchmark, baseline_program
+from evopolicygym import EvaluationConfig, evaluate
+from evopolicygym.execution import ProcessExecution
+
+result = evaluate(
+    baseline_program(),
+    CartPoleBenchmark(),
+    execution=ProcessExecution.unsafe(),
+    config=EvaluationConfig(episodes=5, seed=42),
+)
+print(result.feedback.score)
+print(result.feedback.content)
+PY
+</code></pre>
+<p>A Policy Program is an immutable snapshot of a source directory whose
+<code>policy.py</code> defines <code>make_policy(context)</code>. See the
+<a href="docs/policy.html">Policy guide</a> to write
+one.</p>
+<blockquote>
+<p><code>ProcessExecution</code> is not a sandbox. Policy and Agent processes run with the
+authority of the current operating-system user; use it only with trusted
+code. Its Agent instructions prohibit out-of-Session Environment interaction,
+but this is a normative prompt rule rather than an isolation guarantee.</p>
+</blockquote>
+<h2 id="run-a-coding-agent">Run a coding agent</h2>
+<p>First-party command-line integrations are available for Codex, Claude Code,
+Kimi Code, and Qoder:</p>
+<pre><code class="language-python">from evopolicygym.agents import ClaudeCode, Codex, KimiCode, Qoder
+
+codex = Codex(model=&quot;gpt-5.6-luna&quot;, reasoning_effort=&quot;high&quot;)
+claude = ClaudeCode(model=&quot;sonnet&quot;, effort=&quot;high&quot;)
+kimi = KimiCode(model=&quot;kimi-code/kimi-for-coding&quot;)
+qoder = Qoder(model=&quot;performance&quot;, reasoning_effort=&quot;high&quot;)
+</code></pre>
+<p>Each selection translates the same Host-owned task into a non-interactive CLI
+invocation; the Run protocol and process supervision remain provider-neutral.
+Authenticate the selected CLI before starting a Run. Qoder automation may use
+<code>QODER_PERSONAL_ACCESS_TOKEN</code>. For Kimi Code and Qoder, respectively set
+<code>KIMI_CODE_HOME</code> or <code>QODER_CONFIG_DIR</code> to a caller-owned isolated directory
+when retained CLI configuration and session history must not share state with
+other Runs.</p>
+<p>After authenticating the Codex CLI, start a small budgeted CartPole Run:</p>
+<pre><code class="language-console">mkdir -p runs
+uv run --project environments/gymnasium/classic_control/cartpole \
+  python scripts/run_cartpole_codex.py \
+  --model gpt-5.6-luna \
+  --reasoning-effort high \
+  --record-to runs/cartpole-001 \
+  --episode-budget 30 \
+  --episode-pool-size 60 \
+  --max-episodes-per-submission 10 \
+  --validation-episodes-per-candidate 5 \
+  --assessment-episodes 10 \
+  --allow-unsafe-process
+</code></pre>
+<p>Public Evaluation and Run workflows use the Python SDK. During one active Run,
+the Agent-facing <code>evopolicygym-session</code> command provides only two capabilities:</p>
+<pre><code class="language-python">from evopolicygym.run import RunConfig, run
+</code></pre>
+<p><code>run()</code> is owned by the <code>evopolicygym.run</code> use-case package and is not exported
+from the root package, avoiding a function/submodule name collision.</p>
+<pre><code class="language-console">evopolicygym-session submit program --episodes &quot;0:2,4:8&quot;
+evopolicygym-session finish submission-000002 submission-000003
+</code></pre>
+<p><code>submit</code> requests an experiment over selected Run-local Episode indices.
+<code>finish</code> hands published candidates to the Host and permanently closes Agent
+authority before private Validation and Assessment. Runs configured with
+<code>finish_budget_policy="require_budget_exhaustion"</code> reject <code>finish</code> while any
+Episode budget remains; the rejection is retryable and does not change the
+candidate set.</p>
+<p>For AI-assisted setup, SDK usage, provider integration, Benchmark authoring,
+and Run diagnostics, use the reusable
+<a href="../../skills/evopolicygym"><code>evopolicygym</code> Agent Skill</a>.</p>
+<p>Large reproducible Feedback files may declare <code>retention="bulk"</code>. A Run
+applies <code>bulk_feedback_retention_bytes</code> across the Host record and Agent mirror,
+evicts only old bulk files, and always protects the newest submission. Compact
+Feedback, permanent Artifacts, and Agent-owned work under <code>workspace/analysis/</code>
+remain available. Host-only Validation and Assessment reports retain aggregate
+Benchmark Feedback content but never publish it back into the Agent Session.</p>
+<h2 id="benchmarks">Benchmarks</h2>
+<p>Benchmark distributions are independent packages built on the public
+EvoPolicyGym authoring API.</p>
+<table>
+<thead>
+<tr>
+<th>Collection</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="environments/arcprize/arc_agi_3/README.html">ARC Prize / ARC-AGI-3</a></td>
+<td>All 25 version-pinned public interactive games plus custom collections</td>
+</tr>
+<tr>
+<td><a href="environments/atcoder/README.html">AtCoder AHC</a></td>
+<td>AHC054, AHC057, and AHC058</td>
+</tr>
+<tr>
+<td><a href="environments/codechef/README.html">CodeChef Challenges</a></td>
+<td>WAREHOUS</td>
+</tr>
+<tr>
+<td><a href="environments/crafter/README.html">Crafter</a></td>
+<td>Canonical achievement, long-horizon development, and survival-development profiles</td>
+</tr>
+<tr>
+<td><a href="../../environments/dm_control">DeepMind Control Suite</a></td>
+<td>All 28 official benchmarking tasks across 14 continuous-control domains</td>
+</tr>
+<tr>
+<td><a href="environments/gymnasium/box2d/README.html">Gymnasium Box2D</a></td>
+<td>LunarLander, BipedalWalker, and CarRacing</td>
+</tr>
+<tr>
+<td><a href="environments/gymnasium/classic_control/README.html">Gymnasium Classic Control</a></td>
+<td>CartPole, Acrobot, Mountain Car, and Pendulum</td>
+</tr>
+<tr>
+<td><a href="environments/gymnasium/mujoco/README.html">Gymnasium MuJoCo</a></td>
+<td>All eleven current <code>v5</code> tasks</td>
+</tr>
+<tr>
+<td><a href="environments/gymnasium/toy_text/README.html">Gymnasium Toy Text</a></td>
+<td>Blackjack, CliffWalking, FrozenLake, and Taxi</td>
+</tr>
+<tr>
+<td><a href="environments/minigrid/README.html">MiniGrid and BabyAI</a></td>
+<td>Standard MiniGrid families, all 22 WFC presets, and 40 BabyAI tasks</td>
+</tr>
+<tr>
+<td><a href="../../environments/highway_env">HighwayEnv</a></td>
+<td>All ten canonical single-agent tasks</td>
+</tr>
+<tr>
+<td><a href="../../environments/gymnasium_robotics">Gymnasium-Robotics</a></td>
+<td>Fetch, Maze, Adroit, Shadow Hand, and FrankaKitchen profiles</td>
+</tr>
+<tr>
+<td><a href="../../environments/metaworld">MetaWorld</a></td>
+<td>All 50 MT1 tasks, MT10, MT50, and custom collections</td>
+</tr>
+<tr>
+<td><a href="../../environments/robosuite">robosuite</a></td>
+<td>All 19 registered single-arm and two-arm Panda manipulation environments</td>
+</tr>
+<tr>
+<td><a href="environments/nle/README.html">NLE</a></td>
+<td>Linux-targeted NetHackScore-v0 with complete semantic trajectory Feedback</td>
+</tr>
+<tr>
+<td><a href="../../environments/ale">ALE</a></td>
+<td>Redistributable Tetris profile</td>
+</tr>
+<tr>
+<td><a href="../../environments/vizdoom">ViZDoom</a></td>
+<td>12 wheel-bundled standard scenarios</td>
+</tr>
+<tr>
+<td><a href="../../environments/stable_retro">Stable-Retro</a></td>
+<td>Redistributable Airstriker Level 1 profile</td>
+</tr>
+<tr>
+<td><a href="environments/jackdaw/README.html">Jackdaw</a></td>
+<td>Balatro (<code>run-score-v3</code>: Blinds cleared, doubled on a win)</td>
+</tr>
+</tbody>
+</table>
+<p>See the <a href="environments/README.html">environment catalog</a> and
+<a href="environments/STATUS.html">integration ledger</a> for complete coverage.</p>
+<h2 id="author-a-benchmark">Author a Benchmark</h2>
+<p>External distributions implement the structural <code>Benchmark</code> and <code>Environment</code>
+interfaces from <code>evopolicygym.authoring</code>. A Benchmark owns deterministic
+Episode planning, scoring, sanitized Feedback, and public Artifacts; an
+Environment owns reset, step, and cleanup behavior. Typed environment
+configuration is fixed before a Run and recorded in the Benchmark identity.</p>
+<p>Use <code>check_benchmark()</code> before distribution. See the
+<a href="docs/authoring.html">authoring guide</a> and
+the <a href="environments/gymnasium/classic_control/cartpole/README.html">CartPole</a> or
+<a href="environments/gymnasium/toy_text/frozen_lake/README.html">FrozenLake</a> packages.</p>
+<h2 id="development">Development</h2>
+<pre><code class="language-console">uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build
+</code></pre>
+<p>EvoPolicyGym 0.3 is an alpha release and does not provide process isolation,
+crash recovery, or Run resumption. Read <a href="CONTRIBUTING.html">CONTRIBUTING.md</a> and
+<a href="SECURITY.html">SECURITY.md</a> before changing runtime behavior.</p>
+<h2 id="license">License</h2>
+<p>The EvoPolicyGym Kernel is released under the <a href="../../LICENSE">MIT License</a>.
+Environment distributions may include separately attributed dependencies; see
+their package documentation for details.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym LunarLander Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-lunarlander-benchmark">EvoPolicyGym LunarLander Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium
+<code>LunarLander-v3</code> through EvoPolicyGym's public authoring SPI.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from lunar_lander import (
+    LunarLanderBenchmark,
+    LunarLanderConfig,
+    baseline_program,
+)
+
+benchmark = LunarLanderBenchmark(
+    LunarLanderConfig(
+        continuous=False,
+        gravity=-10.0,
+        enable_wind=False,
+        wind_power=15.0,
+        turbulence_power=1.5,
+    )
+)
+</code></pre>
+<p>All non-rendering Gymnasium constructor parameters are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy.</p>
+<h2 id="contract">Contract</h2>
+<p>The Policy receives a semantic object with:</p>
+<ul>
+<li>normalized horizontal and vertical position;</li>
+<li>horizontal and vertical velocity;</li>
+<li>angle and angular velocity;</li>
+<li>exact boolean contact state for both landing legs.</li>
+</ul>
+<p>Position is centered on the landing pad: <code>x=0</code> is horizontally centered,
+<code>y=0</code> is the pad height adjusted for the deployed-leg offset, and <code>abs(x)&gt;=1</code>
+is the horizontal viewport boundary. The velocity fields are Gymnasium's
+normalized observations; their documented physical conversion factors are
+published in the spec. Angle is in radians, while observed angular velocity
+multiplies by <code>2.5</code> to obtain radians per second.</p>
+<p>In discrete mode, Actions are exact integers:</p>
+<ul>
+<li><code>0</code>: do nothing;</li>
+<li><code>1</code>: fire the left orientation engine;</li>
+<li><code>2</code>: fire the main engine;</li>
+<li><code>3</code>: fire the right orientation engine.</li>
+</ul>
+<p>In continuous mode, an Action is an exact two-float list
+<code>[main_engine, lateral_engine]</code>, with each value in <code>[-1.0, 1.0]</code>. Out-of-range
+Actions are rejected rather than clipped. Main values at or below zero are
+off; a value just above zero starts above 50% power, with exact power
+<code>(main_engine + 1) / 2</code>. The lateral engine is off throughout the inclusive
+interval <code>[-0.5, 0.5]</code>; values below it fire left and values above it fire right
+at power <code>abs(lateral_engine)</code>.</p>
+<p>The Episode terminates on a crash, leaving the viewport, or a settled landing,
+and otherwise truncates at Gymnasium's 1000-step limit. On a normal transition:</p>
+<pre><code class="language-text">position shaping = -100*hypot(x_position, y_position)
+velocity shaping = -100*hypot(x_velocity, y_velocity)
+angle shaping    = -100*abs(angle)
+contact shaping  = +10 per contacting leg
+reward = delta(total shaping) - 0.30*main_power - 0.03*side_power
+</code></pre>
+<p>A settled landing replaces the entire transition reward with <code>+100</code>; a crash
+or horizontal viewport exit replaces it with <code>-100</code>. These are overrides, not
+bonuses added to the normal terms. The scalar Benchmark score is mean Episode
+return; Gymnasium's published solution threshold is 200. Physics constants,
+normalization factors, engine thresholds, wind/turbulence behavior, and reward
+formulas are all published through <code>environment_parameters</code>.</p>
+<p>Policy failure receives a conservative <code>-1000</code> return. The packaged baseline
+uses no thrust in either action mode and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback distinguishes settled landings, crashes, horizontal viewport exits,
+and time limits. It reports closest and final normalized pad distance, speed,
+angle error, a combined landing-state penalty, each shaping delta, requested
+versus actually charged main/side fuel cost, engine firing fractions, leg
+contact fractions, Policy failures, and bounded trace coverage.</p>
+<p><code>trace.jsonl</code> retains at most eight Episodes with complete semantic
+observations, named exact Actions, rewards, termination flags, and per-step
+metrics. Metrics expose exact engine activation, power and impulse scale;
+requested and charged fuel; all four reward deltas and terminal override;
+cumulative reward decomposition; normalized and recovered world-coordinate
+state; contact changes and support state; closest landing-state penalty;
+remaining steps; and an exact terminal reason. Episode rows carry the matching
+aggregate diagnostics and explicit outcome.</p>
+<p>Every Episode with at least one valid transition also preserves every captured
+600 × 400 upstream <code>rgb_array</code> frame losslessly in <code>rendered-frames.npz</code>, with
+step indices, rewards, reward presence, and cumulative returns. The Benchmark
+captures the initial scene, first result, terminal result, and a fixed stride
+of intermediate results, with at most 42 frames per Episode. It derives an
+H.264 MP4 at five frames per second from exactly those frames for direct
+playback. The NPZ is pixel-exact evidence and the MP4 is a presentation
+artifact; both use <code>retention="bulk"</code>. Raw RGB tensors are removed from
+<code>trace.jsonl</code> and never become Policy observations. Rendering failure is
+diagnostic and cannot change physics or score; zero-step failures publish an
+explicit unavailable manifest.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/box2d/lunar_lander
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p>The independent project installs Gymnasium's <code>box2d</code> extra. <code>ProcessExecution</code>
+used by Evaluation tests is explicitly unsafe and provides no isolation. The
+packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

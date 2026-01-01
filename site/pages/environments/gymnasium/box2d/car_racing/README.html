@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym CarRacing Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-carracing-benchmark">EvoPolicyGym CarRacing Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>CarRacing-v3</code>
+through EvoPolicyGym's public authoring SPI.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from car_racing import CarRacingBenchmark, CarRacingConfig, baseline_program
+
+benchmark = CarRacingBenchmark(
+    CarRacingConfig(
+        continuous=True,
+        lap_complete_percent=0.95,
+        domain_randomize=False,
+    )
+)
+</code></pre>
+<p>All dynamics and Action-mode constructor parameters are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. The diagnostic-only Gymnasium <code>verbose</code>
+flag remains fixed to <code>False</code>; rendering is Host-owned.</p>
+<h2 id="contract">Contract</h2>
+<p>The Policy receives the exact native <code>96 x 96 x 3</code> RGB frame as a
+<code>TensorValue(dtype="uint8", shape=(96, 96, 3), data=...)</code>. Pixels are
+row-major RGB bytes in <code>[0, 255]</code>. No downsampling, cropping, feature
+extraction, or color conversion occurs.</p>
+<p>In continuous mode, an Action is an exact three-float list
+<code>[steering, gas, brake]</code>: steering is in <code>[-1.0, 1.0]</code>, while gas and brake are
+in <code>[0.0, 1.0]</code>. In discrete mode, Actions are exact integers:</p>
+<ul>
+<li><code>0</code>: do nothing;</li>
+<li><code>1</code>: steer right;</li>
+<li><code>2</code>: steer left;</li>
+<li><code>3</code>: gas;</li>
+<li><code>4</code>: brake.</li>
+</ul>
+<p>Malformed or out-of-range Actions are rejected rather than repaired or
+clipped.</p>
+<p>An Episode terminates after the configured fraction of the track is completed
+or after leaving the playfield, and otherwise truncates at 1000 steps. Reward
+is <code>-0.1</code> per frame plus <code>1000/N</code> for each newly visited tile; leaving the
+playfield gives a terminal <code>-100</code>. The scalar Benchmark score is mean Episode
+return. Gymnasium's published solution threshold is 900.</p>
+<p>Policy failure receives a conservative <code>-1000</code> return. The continuous packaged
+baseline applies half throttle without steering; the discrete baseline applies
+full throttle without steering. Both are intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return, mean steps, completed laps, Policy failures, and
+bounded trace coverage. Up to four Episodes and 48 steps per Episode are
+traced. Long Episodes retain their first and last steps, a bounded sample of
+inferred new-tile events, and an even sample of the remaining timeline.
+<code>trace.jsonl</code> references exact decision and result RGB arrays in compressed NPZ
+artifacts. PNG contact sheets cover the traced Episodes. Every Episode publishes
+its own bounded animated GIF replay exposing the visual trajectory, controls,
+rewards, cumulative return, and inferred track coverage.</p>
+<p>Track coverage is inferred entirely from the public reward contract: positive
+<code>reward + 0.1</code> tile bonuses are accumulated and divided by the track's public
+1000-point reward total. Feedback also summarizes continuous control usage,
+discrete Action counts, inferred new-tile events, lap completion, and
+off-playfield termination. Omitted trace Episodes and steps, plus sampled replay
+frames, are reported explicitly; the Kernel-owned <code>feedback.json</code> retains every
+Episode result.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/box2d/car_racing
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p>The independent project installs Gymnasium's <code>box2d</code> extra. <code>ProcessExecution</code>
+used by Evaluation tests is explicitly unsafe and provides no isolation. The
+packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

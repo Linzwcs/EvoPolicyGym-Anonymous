@@ -1,0 +1,41 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.DS_Store
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Virtual environments
+.venv
+
+# Local runtime assets
+third_party/miniwob-plusplus/
+
+# Private research/paper materials not included in the open-source package
+archive/
+private/
+paper/
+reference/
+/human-in-loop/
+
+# Generated experiment/cache outputs
+/runs/
+experiment/
+experiment/.cache/
+experiment/**/.cache/
+
+# Local credentials and machine state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.coverage
+htmlcov/
+.codex/
+.claude/

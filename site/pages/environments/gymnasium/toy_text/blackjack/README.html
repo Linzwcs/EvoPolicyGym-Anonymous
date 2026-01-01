@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Blackjack Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-blackjack-benchmark">EvoPolicyGym Blackjack Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Blackjack-v1</code>
+through EvoPolicyGym's public authoring SPI. Each Episode is one
+infinite-deck Blackjack hand.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from blackjack import (
+    BlackjackBenchmark,
+    BlackjackConfig,
+    baseline_program,
+)
+
+benchmark = BlackjackBenchmark(
+    BlackjackConfig(natural=False, sab=True)
+)
+</code></pre>
+<p>The default matches the Gymnasium 1.3.0 <code>Blackjack-v1</code> registration.
+<code>BlackjackConfig</code> publishes the <code>natural</code> and <code>sab</code> rule switches through
+<code>BenchmarkSpec.environment_parameters</code>; they contribute to
+<code>environment_digest</code> and are delivered to every Policy. When <code>sab=True</code>,
+Gymnasium ignores the <code>natural</code> bonus and applies the Sutton-and-Barto natural
+rule. The public parameters also include the exact card-value distribution,
+ace semantics, dealer threshold, payouts, initial card counts, and horizon.</p>
+<h2 id="contract">Contract</h2>
+<p>The positional Gymnasium tuple is converted into a semantic observation:</p>
+<pre><code class="language-json">{
+  &quot;player_sum&quot;: 16,
+  &quot;dealer_showing&quot;: 10,
+  &quot;usable_ace&quot;: false
+}
+</code></pre>
+<p>Action <code>0</code> sticks and Action <code>1</code> hits. Actions must be exact integers;
+booleans, floats, structured values, and out-of-range integers raise
+<code>InvalidAction</code>.</p>
+<p>Cards are drawn with replacement from:</p>
+<pre><code class="language-text">A, 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K
+</code></pre>
+<p>Face cards each have value 10. The dealer draws until reaching at least 17.
+A win returns <code>+1</code>, a draw <code>0</code>, and a loss <code>-1</code>. When <code>sab=False</code> and
+<code>natural=True</code>, a winning natural pays <code>+1.5</code>.</p>
+<p>The terminal observation after a hit can contain player sums 22-31. Feedback
+classifies a hit as <code>hit_continue</code> or <code>hit_bust</code> and reports every card value
+consistent with the visible before/after state. This is derived only from the
+public sum and usable-ace flag; dealer hole cards and dealer final hands remain
+private.</p>
+<p>The scalar Benchmark score is mean terminal reward. Blackjack has high
+per-hand variance, so useful comparisons should evaluate many Episodes.
+Policy failure receives <code>-1</code>, equal to the minimum complete hand return.</p>
+<p>Gymnasium defines no TimeLimit for this environment. The Benchmark declares a
+32-action safety horizon and the adapter enforces it, although positive card
+values make valid hit/stick play terminate naturally well before it.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean reward, mean actions per hand, wins, draws, losses,
+initial player naturals, hit/stick event counts, incomplete hands, Policy
+failures, and bounded trace coverage. <code>trace.jsonl</code> retains at most 32 complete
+hands with every semantic observation seen by the Policy, named unmodified
+Actions, rewards, termination flags, player-sum and usable-ace changes,
+publicly inferable drawn-card values, event classification, and terminal
+reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, dealer hole cards,
+and private runtime evidence are never published.</p>
+<p><code>baseline_program()</code> always sticks immediately. It is intentionally weak and
+leaves hand strategy to the coding agent.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/toy_text/blackjack
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

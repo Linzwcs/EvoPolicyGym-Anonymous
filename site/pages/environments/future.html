@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Future Environment Candidates · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../docs/index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="future-environment-candidates">Future Environment Candidates</h1>
+<p>This note records prospective environments for Coding Agent optimization of
+executable Policy systems. It is a research priority list, not an
+integration-status claim. Runnable and deferred integrations remain
+authoritative in <a href="STATUS.html">STATUS.md</a>.</p>
+<h2 id="provenance-and-adoption-rule">Provenance and adoption rule</h2>
+<p>Candidates are named and organized by their authoritative upstream ecosystem,
+as required by <a href="README.html">the environment taxonomy</a>. EdgeBench is a secondary
+discovery and comparison source: it repackages upstream games, contest
+problems, benchmarks, and APIs as long-running workspace-plus-Judge tasks. An
+EdgeBench task ID identifies that derived task, not the owner of the underlying
+Environment.</p>
+<p>EvoPolicyGym will not import, vendor, or depend on EdgeBench task workspaces,
+container images, prompts, baselines, generators, testers, Judge programs,
+hidden cases, score anchors, feedback traces, or SForge. For each candidate we
+instead:</p>
+<ul>
+<li>locate the official upstream specification, repository, release, and assets;</li>
+<li>verify the upstream code, data, and asset licenses independently;</li>
+<li>use an official runtime directly when it already exposes interaction;</li>
+<li>otherwise implement an independent adapter from the public upstream rules;
+  and</li>
+<li>reject the candidate if no authoritative and redistributable upstream can be
+  established.</li>
+</ul>
+<p>EdgeBench's CC BY 4.0 task-metadata license does not establish redistribution
+rights for the upstream software, contest materials, games, ROMs, or datasets
+referenced by a task.</p>
+<h2 id="verified-provenance-map">Verified provenance map</h2>
+<p>The EdgeBench column documents what EdgeBench changed so that the distinction
+is auditable. Those changes are not implementation inputs for EvoPolicyGym.</p>
+<table>
+<thead>
+<tr>
+<th>Upstream candidate</th>
+<th>Authoritative upstream</th>
+<th>EdgeBench-derived task and alteration</th>
+<th>EvoPolicyGym decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BipedalWalker</td>
+<td><a href="https://gymnasium.farama.org/environments/box2d/bipedal_walker/">Gymnasium <code>BipedalWalker-v3</code></a></td>
+<td><code>bipedalwalker_locomotion_rl</code>: trains a checkpoint and scores only the submitted artifact</td>
+<td>Keep the existing direct Gymnasium integration</td>
+</tr>
+<tr>
+<td>Treant's Forest</td>
+<td><a href="https://atcoder.jp/contests/ahc054/tasks/ahc054_a">AtCoder AHC054</a></td>
+<td><code>treant_forest</code>: adds a Python baseline, local tooling, fixed Judge cases, and score normalization</td>
+<td>Keep the independent direct integration; no EdgeBench or AtCoder tool content is packaged</td>
+</tr>
+<tr>
+<td>Warehouse Manager</td>
+<td><a href="https://www.codechef.com/problems/WAREHOUS">CodeChef <code>WAREHOUS</code></a></td>
+<td><code>warehouse_forklift_routing</code>: adds a Python workspace, baseline, local generator/tester, hidden evaluation, and rescaling</td>
+<td>Keep the independent direct integration; one atomic Action preserves the official complete-output contract, and no CodeChef content is packaged</td>
+</tr>
+<tr>
+<td>Apple Incremental Game</td>
+<td><a href="https://atcoder.jp/contests/ahc058/tasks/ahc058_a">AtCoder AHC058</a></td>
+<td><code>apple_incremental_game</code>: packages the contest task with a baseline, local tooling, fixed Judge cases, and rescaling</td>
+<td>Keep the independent direct integration with one official turn per Action and no AtCoder tool content</td>
+</tr>
+<tr>
+<td>NetHack</td>
+<td><a href="https://github.com/NetHack/NetHack">NetHack</a> and maintained <a href="https://github.com/NetHack-LE/nle">NLE</a></td>
+<td><code>nethack_dungeon_agent</code>: fixes an observation/policy scaffold and scores multiple generated runs</td>
+<td>Defer to a pinned engine execution profile: NLE 1.3.0 supports Python 3.12 and Linux wheels, but native macOS installation requires a CMake 3.28+ source toolchain not owned by the current distribution model</td>
+</tr>
+<tr>
+<td>VRPTW</td>
+<td><a href="https://www.sintef.no/projectweb/top/vrptw/solomon-benchmark/">Solomon VRPTW benchmark</a></td>
+<td><code>vehicle_routing_time_windows</code>: turns solver output into hidden-instance and best-known-solution scoring</td>
+<td>Defer until the instance files have explicit redistribution terms and a constructive interaction contract is accepted; do not repackage EdgeBench's hidden instances or score anchors</td>
+</tr>
+<tr>
+<td>Molecules</td>
+<td><a href="https://atcoder.jp/contests/ahc057/tasks/ahc057_a">AtCoder AHC057</a></td>
+<td><code>molecular_self_assembly</code>: adds a Python baseline, local tooling, fixed Judge cases, and rescaling</td>
+<td>Keep the independent direct integration with atomic bond sets, public motion rules, and no AtCoder tool content</td>
+</tr>
+<tr>
+<td>Battle for Wesnoth</td>
+<td><a href="https://wiki.wesnoth.org/LuaAPI/ai">Wesnoth Lua AI API</a></td>
+<td><code>wesnoth_tactical_ai</code>: selects tactical maps, objectives, an opponent, and a scoring Judge</td>
+<td>Defer to an engine execution profile that owns a pinned headless Wesnoth process, Lua bridge, scenario data, timeouts, and cleanup</td>
+</tr>
+<tr>
+<td>OpenRCT2</td>
+<td><a href="https://github.com/OpenRCT2/OpenRCT2">OpenRCT2</a></td>
+<td><code>openrct2_theme_park_ai</code>: defines a JavaScript automation plugin task and hidden scenarios</td>
+<td>Defer: the engine is open source but normal play requires separately licensed RCT2 files</td>
+</tr>
+<tr>
+<td>OpenTTD</td>
+<td><a href="https://docs.openttd.org/ai-scripting/ai-api/">OpenTTD NoAI API</a></td>
+<td><code>openttd_transport_ai</code>: defines an AI-script objective, generated maps, and company-value scoring</td>
+<td>Defer to an engine execution profile that pins the OpenTTD binary, base graphics, NoAI bridge, generated maps, and long-running process lifecycle</td>
+</tr>
+<tr>
+<td>Dungeon Crawl Stone Soup</td>
+<td><a href="https://github.com/crawl/crawl">DCSS</a></td>
+<td><code>dcss_dungeon_ai</code>: fixes a Lua bot interface, character build, time budget, repeated runs, and mean score</td>
+<td>Defer to an engine execution profile that pins a headless DCSS build and validates a supported machine-control surface</td>
+</tr>
+</tbody>
+</table>
+<p>The public <a href="https://huggingface.co/datasets/ByteDance-Seed/EdgeBench">EdgeBench task metadata</a>
+and <a href="https://edge-bench.org/paper.pdf">paper</a> are retained only as evidence of
+the derived task designs.</p>
+<h2 id="recommended-roadmap">Recommended roadmap</h2>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Upstream candidate</th>
+<th>Policy-system value</th>
+<th>Main concern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Gymnasium BipedalWalker</td>
+<td>Fast continuous-control calibration; already integrated</td>
+<td>Useful as a baseline, not a flagship systems task</td>
+</tr>
+<tr>
+<td>1</td>
+<td>AtCoder AHC054 Treant's Forest</td>
+<td>Native turn-by-turn interaction, state tracking, constraint handling, and replanning</td>
+<td>Integrated independently with a bounded turn horizon</td>
+</tr>
+<tr>
+<td>2</td>
+<td>CodeChef WAREHOUS Warehouse Manager</td>
+<td>Constructive routing, storage strategy, sliding-state planning, and cost optimization</td>
+<td>Integrated independently over the full official size range with an atomic complete-solution Action</td>
+</tr>
+<tr>
+<td>3</td>
+<td>AtCoder AHC058 Apple Incremental Game</td>
+<td>Investment timing, horizon estimation, and phase-dependent decisions</td>
+<td>Integrated independently with one official turn per Action over the complete 500-turn horizon</td>
+</tr>
+<tr>
+<td>4</td>
+<td>NLE NetHack</td>
+<td>Partial observability, map memory, exploration, inventory, combat, and risk</td>
+<td>Deferred until a pinned NLE engine profile is portable across the supported execution matrix</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Solomon VRPTW</td>
+<td>Constructive search, feasibility management, and route repair</td>
+<td>Deferred pending explicit instance redistribution terms and a genuine constructive interaction contract</td>
+</tr>
+<tr>
+<td>6</td>
+<td>AtCoder AHC057 Molecules</td>
+<td>Temporal scheduling and constrained constructive planning</td>
+<td>Integrated independently across all 300 points and 1,000 official turns with bounded bond-event diagnostics</td>
+</tr>
+<tr>
+<td>Later</td>
+<td>Battle for Wesnoth</td>
+<td>Tactical planning, centralized multi-unit control, and opponent response</td>
+<td>Deferred to a pinned headless engine/Lua execution profile</td>
+</tr>
+<tr>
+<td>Later</td>
+<td>OpenTTD</td>
+<td>Network design, capital allocation, expansion, and recovery</td>
+<td>Deferred to a pinned NoAI engine profile with long-Run lifecycle ownership</td>
+</tr>
+<tr>
+<td>Later</td>
+<td>DCSS</td>
+<td>Exploration, combat, inventory, and survival strategy</td>
+<td>Deferred to a pinned headless engine profile and validated control surface</td>
+</tr>
+<tr>
+<td>Deferred</td>
+<td>OpenRCT2</td>
+<td>Hierarchical resource allocation and long-term management</td>
+<td>Original RCT2 data files are a separate asset dependency</td>
+</tr>
+</tbody>
+</table>
+<p>Treant's Forest, Warehouse Manager, Molecules, and Apple Incremental Game are
+completed independent integrations. They deliberately retain their different
+task semantics through two accepted Policy interaction shapes: the three AHC
+integrations expose one meaningful simulated turn per Action, while Warehouse
+Manager preserves its complete-output contract and validates one instruction
+Program atomically. NetHack is the strongest flagship candidate once the
+runtime and long-horizon evaluation workflow are ready.</p>
+<h2 id="suggested-capability-gradient">Suggested capability gradient</h2>
+<pre><code class="language-text">continuous control
+└── Gymnasium BipedalWalker
+
+native online interaction
+└── AtCoder AHC054 Treant's Forest
+
+fast long-horizon decisions
+└── AtCoder AHC058 Apple Incremental Game
+
+constructive planning
+├── CodeChef WAREHOUS Warehouse Manager
+├── Solomon VRPTW
+└── AtCoder AHC057 Molecules
+
+partially observable systems
+├── NLE NetHack
+└── DCSS
+
+hierarchical strategy
+├── Battle for Wesnoth
+└── OpenTTD
+</code></pre>
+<p>This gradient supports experiments on how Coding Agents progress from tuning
+reactive controllers to authoring Policies with explicit memory, search,
+subsystems, and hierarchical planning. The first four runnable steps are
+represented by existing Gymnasium distributions plus the three AtCoder and one
+CodeChef distributions above. Engine-backed steps remain roadmap entries, not
+runnable claims.</p>
+<h2 id="conditional-and-rejected-leads">Conditional and rejected leads</h2>
+<p><a href="https://atcoder.jp/contests/ahc056/tasks/ahc056_a">AtCoder AHC056 Grid Turing Robot</a>
+and <a href="https://www.codechef.com/problems/TRICOL">CodeChef <code>TRICOL</code></a> are verified
+upstreams for EdgeBench's <code>grid_turing_robot</code> and
+<code>triangulation_coloring_optimization</code>. They remain conditional because their
+official form grades a completed design. They qualify only if individual
+Actions expose meaningful construction state rather than an artificial
+one-step Episode. The current roadmap does not admit them; one-shot support by
+itself is not sufficient evidence of useful Policy interaction.</p>
+<p>The EdgeBench-only leads <code>vibrating_path_graph_coloring</code>,
+<code>order_addition_permutation_optimization</code>, and its particular <code>smt_solver</code>
+workspace are not candidates without an independently verified upstream. A
+future SMT environment must begin from the official
+<a href="https://smt-lib.org/">SMT-LIB</a> standards and benchmark ecosystem, not from the
+EdgeBench scaffold.</p>
+<p>The text adventures <code>anchorhead_text_adventure</code>,
+<code>trinity_text_adventure</code>, and <code>tryst_text_adventure</code> refer to existing
+interactive-fiction games exposed by EdgeBench through an HTTP wrapper. Any
+reconsideration must start from each game's publisher, distribution rights, and
+interpreter ecosystem. Fixed worlds also make walkthrough hard-coding difficult
+to distinguish from general Policy improvement.</p>
+<p>Systems engineering, formal-proof, document-production, and large-workspace
+tasks should not be presented as EvoPolicyGym Environments. They grade
+repositories, proofs, checkpoints, or documents rather than closed-loop
+Policies. Faithful support would require a separate Artifact/Workspace Judge
+use case instead of weakening the current <code>Environment.reset()</code> /
+<code>Environment.step()</code> contract.</p>
+<h2 id="integration-requirements">Integration requirements</h2>
+<p>Every accepted candidate must be an independent Benchmark distribution using
+the public authoring SPI described in
+<a href="../ARCHITECTURE.html">ARCHITECTURE.md</a>. It must provide:</p>
+<ul>
+<li>a recorded authoritative upstream URL, version or commit, and license;</li>
+<li>explicit code, data, model, ROM, scenario, and asset provenance;</li>
+<li>no runtime or build dependency on EdgeBench or SForge;</li>
+<li>a fresh Environment and Policy lifecycle for every Episode;</li>
+<li>strict, unrepaired Action validation;</li>
+<li>deterministic split-scoped Episode generation;</li>
+<li>a scalar objective plus bounded diagnostic Feedback;</li>
+<li>private Validation and held-out Assessment coverage; and</li>
+<li>real upstream smoke tests and cleanup tests.</li>
+</ul>
+<p>No <code>environments/edgebench/</code> namespace is planned. EdgeBench task IDs appear
+only in the provenance map to document how a secondary benchmark transformed
+the corresponding upstream material.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

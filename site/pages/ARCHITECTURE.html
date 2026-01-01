@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym kernel architecture · EvoPolicyGym</title><link rel="stylesheet" href="../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="docs/index.html">Documentation</a><a href="../../index.html#environments">Environments</a><a href="REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-kernel-architecture">EvoPolicyGym kernel architecture</h1>
+<p>This document is authoritative for the current clean-slate Kernel. It describes
+the local, non-durable product only. Docker, recovery, and remote execution are
+not design inputs for this version.</p>
+<h2 id="domain-language">Domain language</h2>
+<ul>
+<li>A <code>Program</code> is one immutable, content-addressed Policy source snapshot.</li>
+<li>An <code>AgentSkill</code> is one immutable, content-addressed, pathless directory
+  snapshot explicitly selected as a Coding Agent input to a Run.</li>
+<li>Environment parameters are the public, Case-independent values bound to one
+  configured Benchmark before Evaluation. Their canonical digest distinguishes
+  otherwise identical Benchmark IDs with different task configurations.</li>
+<li>An <code>Evaluation</code> runs one Program through a bounded set of Episodes.</li>
+<li>A training Episode pool is one immutable Run-local tuple of trusted
+  <code>EpisodeSpec</code> and Policy-seed pairs, addressed publicly only by integer
+  indices.</li>
+<li>A <code>Submission</code> commits one Program and its public Feedback.</li>
+<li>A finished candidate set is an ordered, bounded tuple of published
+  Submissions handed from the Agent to the Host in one atomic request.</li>
+<li><code>Validation</code> is a Host-only, post-Agent Evaluation of every finished
+  candidate on identical Episodes. It selects the final Submission without
+  publishing evidence back to the Agent workspace.</li>
+<li><code>Assessment</code> is a Host-only held-out Evaluation of the already selected
+  final Program. It measures the result but never participates in selection.</li>
+<li><code>Feedback</code> has a Kernel-required scalar score, Benchmark-defined public
+  content, and optional public Artifact files. A Benchmark classifies each
+  Artifact as permanent or bulk; the Kernel never guesses from media content.</li>
+<li>A <code>ProgramEvolutionRun</code> is one bounded outer loop in which a Coding Agent
+  edits Programs, submits candidates, reads Feedback, and hands candidates to
+  Host-side final selection.</li>
+<li>A <code>RunEvent</code> is immutable, Host-side observation delivered only after its
+  matching lifecycle event is persisted.</li>
+<li>An <code>Experiment</code> is reserved for a future collection of comparable Runs.</li>
+<li>An <code>AgentRunner</code> starts and reaps one Coding Agent. It does not own Submission
+  accounting, Feedback publication, or Run records.</li>
+</ul>
+<h2 id="package-ownership">Package ownership</h2>
+<pre><code class="language-text">evopolicygym/
+├── __init__.py                 lazy common values and Evaluation convenience
+├── policy.py                   submitted Policy ABI; stdlib-only leaf
+├── program.py                  immutable Program snapshots
+├── _snapshot.py                shared safe discovery and stable file reads
+├── benchmark.py                caller-facing Benchmark identity
+├── results.py                  detached Feedback and result values
+├── artifacts.py                bounded public Artifact values
+├── skills.py                   immutable explicit Agent Skill snapshots
+├── errors.py                   sanitized public failures
+├── authoring/                  external Benchmark authoring and conformance SPI
+│
+├── agents/                     Coding Agent providers
+│   ├── base.py                 Agent contract and shared command helpers
+│   ├── claude_code.py          Claude Code selection and CLI translation
+│   ├── codex.py                Codex selection and CLI translation
+│   ├── kimi_code.py            Kimi Code selection and CLI translation
+│   └── qoder.py                Qoder selection and CLI translation
+│
+├── evaluation/                 complete direct-Evaluation use case
+│   ├── __init__.py             EvaluationConfig and evaluate()
+│   ├── _inputs.py              exact trusted Episode and Policy-seed inputs
+│   └── _service.py             Episode rules and narrow runtime contracts
+│
+├── run/                        complete Program-Evolution use case
+│   ├── __init__.py             Run/Validation/Assessment configs and run()
+│   ├── progress.py             public Run events, observer, and console reporter
+│   ├── _service.py             execution-independent Run lifecycle coordination
+│   ├── _process.py             ProcessExecution selection and graph assembly
+│   ├── _agent.py               Run-owned Agent outcome and runner contract
+│   ├── _episode_pool.py        fixed training pool and seed derivation
+│   ├── _workspace.py           workspace layout, preparation, and Program capture
+│   ├── _publication.py         atomic Submission and Feedback publication
+│   ├── _json.py                retained public-value JSON projection
+│   ├── _task.py                provider-independent Agent instructions
+│   ├── _session/               active mutable Agent Session control plane
+│   │   ├── outcomes.py         detached receipts and sanitized rejections
+│   │   ├── service.py          budget and atomic finish admission
+│   │   ├── gateway.py          Host-side Unix-socket Gateway
+│   │   ├── runner.py           coordinator-thread Session dispatch
+│   │   ├── client.py           Agent-side framed transport
+│   │   └── cli.py              Agent-facing Session presentation
+│   ├── _selection/             Host-only post-Agent phases
+│   │   ├── validation.py       candidate evaluation and final selection
+│   │   └── assessment.py       held-out final-Program measurement
+│   └── _records/               immutable persisted Run facts
+│       ├── recorder.py         coordination and observer delivery
+│       ├── events.py           events.jsonl projection
+│       ├── invocation.py       retained Agent invocation
+│       ├── manifest.py         terminal run.json projection
+│       ├── reports.py          Validation and Assessment report projections
+│       └── writer.py           durable atomic writing primitives
+│
+├── execution/                  public execution selections
+│   ├── __init__.py             explicit unsafe ProcessExecution acknowledgement
+│   └── process/                private process implementation
+│       ├── policy/
+│       │   ├── runtime.py      Host Policy-process controller
+│       │   ├── worker.py       Episode-local guest entry point
+│       │   └── stream.py       blocking frame I/O
+│       └── agent/
+│           └── runner.py       command Agent process lifecycle
+│
+├── _protocol/
+│   ├── _framing.py             shared bounded JSON frame mechanism
+│   ├── policy.py               Policy process framing and PolicyValue codec
+│   └── session.py              versioned Agent Session framing
+└── cli.py                      Host/operator presentation over the public SDK
+</code></pre>
+<p>There is no parallel private shadow package for a public use case.
+<code>evopolicygym.evaluation</code>, <code>evopolicygym.run</code>, and
+<code>evopolicygym.execution</code> are both their stable public entry points and their
+implementation ownership boundaries.</p>
+<p>The canonical Program-Evolution import is
+<code>from evopolicygym.run import RunConfig, run</code>. The root package deliberately
+does not export a value named <code>run</code>, because that name is owned by the
+<code>evopolicygym.run</code> submodule and must not change meaning with import order.</p>
+<p>The <code>evopolicygym</code> executable is the Host/operator command surface. The
+separate <code>evopolicygym-session</code> executable is projected into an active Agent
+Run and owns only <code>submit</code> and <code>finish</code>; it is a presentation over
+<code>agent-session/v3</code>, not an operator workflow or Benchmark registry.</p>
+<h2 id="environment-distributions">Environment distributions</h2>
+<p>Independently installable Benchmark distributions live under the repository's
+top-level <code>environments/</code> directory. Each child owns its Environment,
+deterministic Episode planning, scoring, Feedback, baseline, dependencies, and
+tests.</p>
+<p>An Environment distribution depends only on the supported public SDK and
+<code>evopolicygym.authoring</code> SPI. It is not included in the base wheel, the Kernel
+does not import it, and sibling distributions do not import one another.
+<code>environments/gymnasium/classic_control/cartpole/</code>, for example, builds
+<code>evopolicygym-benchmark-cartpole</code> and imports as <code>cartpole</code>.</p>
+<p>First-party reusable Coding Agent workflows live independently under the
+repository's top-level <code>skills/</code> directory. A Benchmark distribution may
+document a compatible Skill, but does not package, load, or reference it from
+<code>BenchmarkSpec</code>.</p>
+<h2 id="environment-configuration-boundary">Environment configuration boundary</h2>
+<p>The caller constructs a configured Benchmark using the distribution's typed
+API. The distribution validates those values, retains them on the Benchmark,
+publishes the exact applied values through
+<code>BenchmarkSpec.environment_parameters</code>, and uses that bound configuration from
+<code>make_environment(episode)</code>.</p>
+<pre><code class="language-text">distribution-owned typed parameters
+                 │
+                 ▼
+       configured Benchmark
+          │              │
+          ▼              ▼
+ public BenchmarkSpec   make_environment(EpisodeSpec)
+ parameters + digest        uses bound parameters
+</code></pre>
+<p>The Kernel never accepts an untyped bag of simulator keyword arguments and
+does not pass a second configurable value into <code>make_environment()</code>. This
+keeps validation and application under one owner and prevents two competing
+configuration sources.</p>
+<p>Environment parameters are static, public, and visible to the Coding Agent and
+the Episode-local Policy through <code>PolicyContext</code>. <code>EpisodeSpec.scenario</code> and
+<code>environment_seed</code> remain trusted per-Episode inputs and never cross the Policy
+boundary. Run budgets, timeouts, rendering, and execution settings are not
+Environment parameters.</p>
+<p>The canonical Environment digest is derived from the exact bounded
+<code>PolicyValue</code> mapping, including carrier types. Evaluation results carry that
+digest; Run submission, Validation, and Assessment rules reject results whose
+Benchmark ID or Environment digest differs from the Run's selected
+<code>BenchmarkSpec</code>.</p>
+<h2 id="dependency-direction">Dependency direction</h2>
+<p>Public values are the shared vocabulary. A public use-case <code>__init__.py</code> owns
+its configuration and performs lazy selection only when the operation is
+called. Its private service owns the workflow.</p>
+<pre><code class="language-text">caller
+  │
+  ▼
+public use case ───────▶ use-case-local process assembly
+  │                                 │
+  ▼                                 ▼
+service and rules ◀──── narrow ports and execution adapters
+  │                                 │
+  └────────────────────▶ pure protocol codecs
+</code></pre>
+<p>The rules are:</p>
+<ul>
+<li>importing public configurations or <code>policy.py</code> does not load a private
+  runtime, process implementation, or protocol codec;</li>
+<li><code>policy/v2</code> provides the Case-independent public Environment parameters
+  separately from descriptive Benchmark metadata;</li>
+<li><code>evaluation/_service.py</code> declares the Policy-runtime capabilities it
+  consumes and never selects an execution setting or Agent provider;</li>
+<li><code>run/_service.py</code> coordinates the lifecycle without importing a process
+  implementation or Coding Agent provider; <code>run/_process.py</code> is the only
+  ProcessExecution graph assembly owner;</li>
+<li><code>run/_session/service.py</code> owns budgets, admission, publication ordering, and the
+  mapping from submitted public Episode indices to the fixed training pool,
+  plus the atomic transfer of an ordered candidate set, without depending on
+  an execution setting or provider;</li>
+<li><code>run/_session/client.py</code> and <code>run/_session/cli.py</code> do not import the Host
+  Session service; framed client transport and Host authority remain separate;</li>
+<li><code>run/_session/gateway.py</code> decodes socket traffic on its listener thread but
+  queues valid requests for <code>run/_session/runner.py</code> to dispatch on the Host
+  coordinator thread. Environment construction, stepping, rendering,
+  publication, and Session state transitions therefore never run on the
+  transport listener thread;</li>
+<li><code>run/_selection/validation.py</code> owns deterministic final selection. It starts only
+  after the Agent runner has reaped the process tree and the Session gateway
+  has closed;</li>
+<li><code>run/_selection/assessment.py</code> evaluates only the selected Submission, uses its own
+  seed domain, and cannot replace or rerank candidates;</li>
+<li><code>run/_records</code> owns only immutable persisted facts and report projections;
+  it never imports the active Session. Reports may retain detached public
+  outcomes but never Session state, receipts, sockets, or raw frames;</li>
+<li><code>run/</code> owns workspaces, Feedback publication, records, and Session transport;
+  these responsibilities do not live under process execution;</li>
+<li><code>run/</code> also owns cross-submission bulk retention because only the Run knows
+  submission chronology and both publication roots. It applies the same
+  oldest-first decision to the Host record and Agent mirror, never removes
+  compact Feedback or Agent-owned analysis, and always protects the newest
+  submission;</li>
+<li><code>run/progress.py</code> owns non-authoritative observation and terminal
+  presentation; observers never participate in Run state transitions and
+  receive no private Case, seed, Policy exchange, or Host path;</li>
+<li><code>evaluation/_service.py</code> reports only sanitized Episode completion through a
+  narrow callback and performs no terminal or file I/O;</li>
+<li><code>execution/process</code> owns only generic process mechanisms and never imports a
+  Codex, Claude Code, Kimi Code, Qoder, or other provider integration;</li>
+<li><code>agents.base.CodingAgent</code> is the supported structural integration template:
+  the Host supplies an <code>AgentTask</code>, and the provider returns a validated
+  <code>AgentInvocation</code>;</li>
+<li><code>run/_task.py</code> owns workspace, submit, finish, budget, and Benchmark
+  instructions, including the normative rule that the Session submit command
+  is the Agent's only authorized Benchmark Environment interaction path, so
+  provider implementations do not duplicate Kernel semantics;</li>
+<li>callers explicitly compose zero or more immutable <code>AgentSkill</code> snapshots
+  into a Run; the Run retains each complete directory read-only at
+  <code>workspace/skills/&lt;name&gt;/</code>, records its content digest, and never exposes a
+  Skill to direct Evaluation or the Policy boundary;</li>
+<li><code>program.py</code> and <code>skills.py</code> retain separate domain validation and digests
+  while sharing only safe discovery and stable-read mechanisms in
+  <code>_snapshot.py</code>;</li>
+<li>provider packages translate the task into their own invocation but do not
+  author the task or start and supervise the process themselves;</li>
+<li>provider-specific experiment inputs such as the Codex model and reasoning
+  effort belong to the provider selection and retained Agent identity, not
+  <code>RunConfig</code> or <code>BenchmarkSpec</code>;</li>
+<li>a small provider integration remains one cohesive module until its own
+  responsibilities justify a package;</li>
+<li><code>_protocol</code> is pure bytes/value transformation and performs no I/O;</li>
+<li><code>policy.py</code> remains a stdlib-only leaf for submitted code.</li>
+</ul>
+<p>Narrow <code>Protocol</code> contracts are colocated with the service that consumes them.
+There is no global <code>ports.py</code>, global adapter namespace, or global composition
+root.</p>
+<h2 id="run-phase-and-evidence-boundaries">Run phase and evidence boundaries</h2>
+<pre><code class="language-text">Agent search
+  submit(Episode indices) → public Feedback → edit → ... → finish(candidate IDs)
+                                             │
+                                             ▼
+                              close Session and reap Agent
+                                             │
+                                             ▼
+                                Host-only Validation
+                                             │
+                                             ▼
+                                      final selection
+                                             │
+                                             ▼
+                              held-out Assessment (optional)
+                                             │
+                                             ▼
+                                        Run commit
+</code></pre>
+<p>Before Agent execution, the Host derives one training-pool seed from
+<code>RunConfig.seed</code> under <code>evopolicygym/training-pool/v1</code>, asks the Benchmark for
+exactly <code>episode_pool_size</code> <code>EpisodeSpec</code> values once, and derives one stable
+Policy seed per index under <code>evopolicygym/training-policy/v1</code>. The default pool
+size equals <code>episode_budget</code>, but callers may configure a larger selectable
+pool without increasing total authority. The default <code>max_submissions</code> also
+equals <code>episode_budget</code>, so every remaining Episode unit can still be spent as
+a singleton Submission; callers may explicitly configure a tighter limit.</p>
+<p><code>submit</code> uses <code>agent-session/v3</code> and carries an explicit, non-empty,
+strictly-increasing <code>episode_indices</code> list. The CLI expands singleton and
+half-open range unions such as <code>"0:2,4:8"</code> to
+<code>[0, 1, 4, 5, 6, 7]</code>. Duplicate, overlapping, malformed, out-of-pool, and
+over-budget selections are rejected before Program capture. Reusing an index
+across Submissions is valid and consumes budget again. The mapping is fixed
+for the Run, while Evaluation still creates a fresh Environment, Policy
+process, Policy instance, and scratch directory for every selected index.
+When <code>finish_budget_policy</code> requires budget exhaustion, admission additionally
+rejects a selection that would leave more Episode units than the remaining
+Submission slots can consume. Session construction rejects a strict
+configuration whose total capacity can never exhaust its Episode budget.</p>
+<p><code>finish</code> also uses <code>agent-session/v3</code> and accepts a non-empty
+<code>submission_ids</code> list. The Host rejects malformed, duplicate, unknown, or
+over-limit candidates before changing Session state. A successful request
+closes Agent authority; it does not select a final Program inside the Session.
+Without Validation, exactly one candidate is allowed. The default
+<code>allow_early</code> finish budget policy admits a valid request with unused Episode
+units. <code>require_budget_exhaustion</code> instead returns a retryable
+<code>budget_remaining</code> rejection until the remaining count is zero. That rejection
+does not close authority, publish a candidate set, or consume budget.</p>
+<p>Validation uses a Run-seed-derived domain-separated seed and one identical
+<code>EvaluationConfig</code> for every candidate. Selection compares primary score in
+the Benchmark's declared direction, then Policy-failure count, then finish
+argument order. A trusted fault terminates the Run as <code>validation_failed</code>
+without a partial final selection or automatic retry.</p>
+<p>Assessment uses an independent Run-seed-derived domain and evaluates only the
+selected Submission. A trusted fault terminates as <code>assessment_failed</code> while
+retaining that final Program; it never falls back to another candidate and
+does not create a partial report.</p>
+<p>The Agent-visible <code>workspace/</code> contains editable <code>program/</code>, public
+<code>feedback/</code>, Agent-owned non-submitted <code>analysis/</code>, and zero or more explicitly
+selected read-only Skill directories under <code>skills/</code>. The Kernel never prunes
+<code>analysis/</code>. <code>validation/</code> and <code>assessment/</code> are not created until after Agent
+cleanup. Successful phases retain scores, Policy-failure counts, and copied
+Benchmark-defined aggregate Feedback content in Host-only reports. Feedback
+Artifacts, private Episodes, seeds, cases, traces, and execution evidence are
+omitted, and none of this evidence crosses back into the Agent workspace.</p>
+<p>Publication writes independent Host and Agent copies. Artifact metadata in
+<code>feedback.json</code> records a Benchmark-declared <code>permanent</code> or <code>bulk</code> retention
+class. A configurable Run-level byte capacity counts actual bulk bytes in both
+copies. After committing a new submission, the Kernel removes only bulk files
+from older submissions in chronological order and updates each view's
+<code>availability.json</code>; it preserves Feedback metadata, hashes, permanent
+Artifacts, and the complete newest submission. Submission Feedback uses
+<code>evopolicygym/feedback/v2</code> and maps every public Episode summary to its
+Run-local training index. <code>run.json</code> uses
+<code>evopolicygym/run-record/v8</code>, retains the finish budget policy, bulk capacity,
+pool size, derivation protocol, the public Environment parameters and canonical
+digest beside the Benchmark ID, selected index sets, selected Skill names,
+digests, and snapshot paths, and references the available aggregate reports.</p>
+<p>This is a logical lifecycle and publication boundary, not a security boundary:
+<code>ProcessExecution</code> remains non-isolated. A Benchmark that requires
+cryptographically hidden Cases still needs future remote execution or
+whole-Run virtualization. The Agent task forbids direct local Environment
+interaction, but prompt compliance cannot enforce that boundary against a
+hostile or compromised process.</p>
+<h2 id="migration-status">Migration status</h2>
+<p>The parallel <code>_evaluation</code>, <code>_evolution</code>, and <code>_execution</code> shadow packages and
+the global <code>_composition.py</code> root have been eliminated. Earlier architecture
+roles such as <code>_local</code>, <code>_engine</code>, <code>_adapters</code>, <code>_wire</code>, <code>_wiring</code>, and
+<code>settings</code> remain prohibited. Reintroducing a compatibility or
+version-suffixed namespace for removed behavior is also prohibited.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

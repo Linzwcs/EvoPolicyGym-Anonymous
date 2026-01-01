@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid PutNear Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-putnear-benchmark">MiniGrid PutNear Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/PutNearEnv/">MiniGrid PutNear</a>
+object-rearrangement task.</p>
+<p>The Policy receives the upstream <code>7 × 7 × 3</code> egocentric symbolic image,
+compass direction, and a relational mission. It must pick up exactly the named
+colored object and drop it in an empty cell next to a second named object.
+Picking up a wrong object terminates immediately. Every drop attempted while
+carrying also terminates: an actual adjacent drop succeeds, an actual
+non-adjacent drop is misplaced, and a drop into an occupied cell is a distinct
+blocked-drop failure that leaves the object carried. The primary score is
+mean upstream Episode return; success rate remains separately reported.</p>
+<p>Although upstream documentation labels <code>toggle</code> unused, toggling an empty box
+destroys it without termination. Destroying either named mission object makes
+the task impossible; Feedback diagnoses this explicitly.</p>
+<h2 id="install-and-test">Install and test</h2>
+<p>From the EvoPolicyGym repository root:</p>
+<pre><code class="language-console">uv sync --project environments/minigrid/minigrid/put_near --extra dev
+uv run --project environments/minigrid/minigrid/put_near \
+  python -m unittest discover \
+  -s environments/minigrid/minigrid/put_near/tests
+uv build environments/minigrid/minigrid/put_near
+</code></pre>
+<h2 id="public-api">Public API</h2>
+<pre><code class="language-python">from minigrid_put_near import (
+    PutNearBenchmark,
+    PutNearConfig,
+    baseline_program,
+)
+
+benchmark = PutNearBenchmark(
+    PutNearConfig(profile=&quot;8x8-N3&quot;),
+)
+program = baseline_program()
+</code></pre>
+<p>Available profiles are <code>6x6-N2</code> and <code>8x8-N3</code>. A profile is selected by the
+Host before a Run and contributes to the environment digest.</p>
+<p>Feedback reports object labels and discovery steps, correct and wrong pickups,
+whether the front cell is empty and adjacent to the target, valid-drop
+availability, misplaced and blocked drops, destroyed mission boxes, failed
+interactions, observation novelty, ineffective actions, action mix, exact
+terminal reason, return, truncation, and Policy failures. <code>trace.jsonl</code>
+contains a bounded semantic trace for at most four Episodes and no Episode
+seed, private identity, or Host path.</p>
+<p>The packaged baseline parses the public mission, builds a relative map from
+public observations, shortest-path plans to the movable object, and selects a
+reachable empty drop cell adjacent to the target. It consumes no private
+environment state.</p>
+<p>Tests that use <code>ProcessExecution.unsafe()</code> run trusted packaged code only.
+That backend is a local process mechanism, not a sandbox and not suitable for
+hostile Programs.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

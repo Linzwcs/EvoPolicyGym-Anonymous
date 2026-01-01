@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Crafter local-symbolic observation v1 · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="crafter-local-symbolic-observation-v1">Crafter local-symbolic observation v1</h1>
+<p>Status: implemented experimental observation contract (2026-08-10).</p>
+<p>This document defines an information-bounded symbolic observation profile for
+the pinned Crafter 1.8.3 Benchmark distribution. The profile is inspired by
+Craftax's symbolic interface, but it remains a Crafter task: it does not import
+Craftax, change Crafter dynamics, add Actions, or change any scoring profile.</p>
+<p>The intended experiment separates two Policy-authoring difficulties:</p>
+<ol>
+<li>extracting local game state and HUD values from a <code>64 x 64</code> RGB frame; and</li>
+<li>using that state for survival, exploration, combat, and development.</li>
+</ol>
+<p><code>local-symbolic-v1</code> removes most of the first difficulty while preserving the
+second. It deliberately does not turn Crafter into a globally observed planning
+task.</p>
+<h2 id="1-decisions">1. Decisions</h2>
+<p>The v1 implementation must satisfy all of the following decisions.</p>
+<ul>
+<li>Keep the existing RGB profile and every existing public default unchanged.</li>
+<li>Add <code>observation_profile="local-symbolic-v1"</code> as an explicit, immutable
+  <code>CrafterConfig</code> selection. The default remains <code>"rgb"</code>.</li>
+<li>Use the same pinned <code>crafter==1.8.3</code> simulator, Episode planning, Actions,
+  transition order, termination rules, reward profile, and aggregate scoring as
+  the corresponding RGB Benchmark.</li>
+<li>Publish only a player-centered local spatial crop, named inventory values,
+  facing direction, sleeping state, and daylight.</li>
+<li>Never publish the upstream global semantic map, absolute player position,
+  Environment seed, world RNG, achievement counters, or hidden simulator
+  counters as a Policy observation.</li>
+<li>Use a distinct Benchmark ID and Environment digest for the symbolic task.</li>
+<li>Make the symbolic profile available to every existing Crafter scoring class;
+  observation selection is orthogonal to scoring selection.</li>
+<li>Keep Benchmark-specific strategy instructions in a new caller-selected Agent
+  Skill. Do not add a Skill name or Skill contents to <code>BenchmarkSpec</code>.</li>
+<li>Do not require a Kernel change.</li>
+</ul>
+<p>The first release is symbolic-only, not hybrid RGB-plus-symbolic. A hybrid
+profile can be proposed separately if an experiment needs it.</p>
+<h2 id="2-compatibility-and-public-identity">2. Compatibility and public identity</h2>
+<p><code>CrafterConfig</code> gains one field:</p>
+<pre><code class="language-python">observation_profile: Literal[&quot;rgb&quot;, &quot;local-symbolic-v1&quot;] = &quot;rgb&quot;
+</code></pre>
+<p>Validation must require an exact string and one of the two published values.
+Existing constructors that do not pass the field retain byte-for-byte RGB
+Policy observations and their existing Benchmark IDs.</p>
+<p>For RGB, IDs remain unchanged. For local symbolic, insert the observation
+profile between the Environment name and metric name. For example:</p>
+<pre><code class="language-text">RGB canonical:
+crafter/CrafterReward-v1/achievement-score-v1
+
+Local-symbolic canonical:
+crafter/CrafterReward-v1/local-symbolic-v1/achievement-score-v1
+
+RGB LHS:
+crafter/CrafterReward-v1/long-horizon-survival-score-v1
+
+Local-symbolic LHS:
+crafter/CrafterReward-v1/local-symbolic-v1/
+  long-horizon-survival-score-v1
+</code></pre>
+<p>The line break in the last example is for display only. The actual ID is one
+continuous string.</p>
+<p>Every symbolic specification must publish at least these exact Environment
+parameters in addition to the existing Crafter parameters:</p>
+<pre><code class="language-text">observation_profile = &quot;local-symbolic-v1&quot;
+symbolic_view_rows = 7
+symbolic_view_columns = 9
+symbolic_player_row = 3
+symbolic_player_column = 4
+</code></pre>
+<p>The RGB default must preserve its existing Environment parameters and
+historical Environment digest, so it does not add an
+<code>observation_profile="rgb"</code> parameter. Its existing RGB observation space and
+Benchmark ID already identify that task. The symbolic profile publishes the
+new observation parameters above and has a distinct Benchmark ID, so its
+Environment digest cannot collide with RGB. Add a regression test for the
+historical default RGB digest.</p>
+<p><code>include_mp4_feedback=True</code> is not supported with <code>local-symbolic-v1</code> in v1.
+<code>CrafterConfig</code> must reject that combination. A later version may add a derived
+symbolic replay, but must not label it as upstream RGB evidence.</p>
+<h2 id="3-policy-observation-contract">3. Policy observation contract</h2>
+<p>The complete observation is one <code>dict[str, PolicyValue]</code> with exactly these
+keys:</p>
+<pre><code class="language-python">{
+    &quot;terrain&quot;: TensorValue(...),
+    &quot;entities&quot;: TensorValue(...),
+    &quot;inventory&quot;: {...},
+    &quot;facing&quot;: &quot;down&quot;,
+    &quot;sleeping&quot;: False,
+    &quot;daylight&quot;: 0.82,
+}
+</code></pre>
+<p>No other fields are present.</p>
+<h3 id="31-local-geometry">3.1 Local geometry</h3>
+<p>Crafter is constructed with <code>view=(9, 9)</code>. Its RGB renderer reserves two cells
+along the second internal view axis for the 16 inventory items, leaving an
+internal spatial grid of <code>9 x 7</code> in <code>[x, y]</code> order. The public symbolic grid
+transposes that crop into row-major <code>[row, column]</code> order:</p>
+<pre><code class="language-text">shape:             (7, 9)
+row 0:             north/up edge of the visible crop
+row 6:             south/down edge of the visible crop
+column 0:          west/left edge of the visible crop
+column 8:          east/right edge of the visible crop
+player location:   [3, 4]
+</code></pre>
+<p>The crop is centered on the current player position after reset and after each
+Action. It must not contain a larger radius than the RGB spatial view. At a
+world boundary, cells outside the world use the public unknown ID <code>0</code> in both
+spatial tensors.</p>
+<p>The local grid remains semantic at night. This is an intentional reduction of
+the RGB perception problem, not additional spatial visibility: the Policy sees
+clear labels for the same local cells but never sees cells outside the local
+crop.</p>
+<p>Both tensors use C-order row-major bytes.</p>
+<h3 id="32-terrain-tensor">3.2 Terrain tensor</h3>
+<p><code>terrain</code> is:</p>
+<pre><code class="language-text">carrier: TensorValue
+dtype:   uint8
+shape:   (7, 9)
+</code></pre>
+<p>The stable public IDs are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">ID</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0</td>
+<td>unknown or outside the world</td>
+</tr>
+<tr>
+<td style="text-align: right;">1</td>
+<td>water</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td>grass</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td>stone</td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td>path</td>
+</tr>
+<tr>
+<td style="text-align: right;">5</td>
+<td>sand</td>
+</tr>
+<tr>
+<td style="text-align: right;">6</td>
+<td>tree</td>
+</tr>
+<tr>
+<td style="text-align: right;">7</td>
+<td>lava</td>
+</tr>
+<tr>
+<td style="text-align: right;">8</td>
+<td>coal</td>
+</tr>
+<tr>
+<td style="text-align: right;">9</td>
+<td>iron</td>
+</tr>
+<tr>
+<td style="text-align: right;">10</td>
+<td>diamond</td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td>crafting table</td>
+</tr>
+<tr>
+<td style="text-align: right;">12</td>
+<td>furnace</td>
+</tr>
+</tbody>
+</table>
+<p>These are Benchmark-owned IDs. The extractor must translate from the pinned
+upstream representation and verify that the complete upstream material table
+still matches the expected contract. It must not rely on undocumented numeric
+IDs without checking them.</p>
+<p>Terrain and entities are separate tensors. A creature standing on grass, for
+example, leaves <code>grass</code> in <code>terrain</code> and places the creature ID in <code>entities</code>.
+This preserves information visible around transparent sprites and is easier to
+reason about than the upstream <code>SemanticView</code>, which overwrites terrain with an
+object ID.</p>
+<h3 id="33-entity-tensor">3.3 Entity tensor</h3>
+<p><code>entities</code> is:</p>
+<pre><code class="language-text">carrier: TensorValue
+dtype:   uint8
+shape:   (7, 9)
+</code></pre>
+<p>The stable public IDs are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">ID</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0</td>
+<td>no entity or outside the world</td>
+</tr>
+<tr>
+<td style="text-align: right;">1</td>
+<td>player</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td>cow</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td>zombie</td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td>skeleton</td>
+</tr>
+<tr>
+<td style="text-align: right;">5</td>
+<td>arrow moving left</td>
+</tr>
+<tr>
+<td style="text-align: right;">6</td>
+<td>arrow moving right</td>
+</tr>
+<tr>
+<td style="text-align: right;">7</td>
+<td>arrow moving up</td>
+</tr>
+<tr>
+<td style="text-align: right;">8</td>
+<td>arrow moving down</td>
+</tr>
+<tr>
+<td style="text-align: right;">9</td>
+<td>young plant</td>
+</tr>
+<tr>
+<td style="text-align: right;">10</td>
+<td>ripe plant</td>
+</tr>
+<tr>
+<td style="text-align: right;">11</td>
+<td>fence</td>
+</tr>
+</tbody>
+</table>
+<p>Arrow direction and plant ripeness are included because their upstream RGB
+textures expose those distinctions. Exact entity health, attack cooldown,
+skeleton reload counter, plant age, and any other hidden object field are not
+included.</p>
+<p>Crafter 1.8.3 permits at most one object per world cell. The extractor must
+verify this through the pinned world object map. An unknown visible object type,
+an invalid direction, or multiple objects in one cell is a trusted Environment
+fault, not a new public <code>unknown entity</code> value.</p>
+<h3 id="34-inventory-mapping">3.4 Inventory mapping</h3>
+<p><code>inventory</code> is a dictionary with exactly the following keys and exact integer
+values:</p>
+<pre><code class="language-text">health
+food
+drink
+energy
+sapling
+wood
+stone
+coal
+iron
+diamond
+wood_pickaxe
+stone_pickaxe
+iron_pickaxe
+wood_sword
+stone_sword
+iron_sword
+</code></pre>
+<p>Every value must be an exact Python <code>int</code> in <code>[0, 9]</code>. The field exposes no
+information beyond the icons and decimal counts already rendered in the RGB
+HUD; it removes the need for Policy-side icon recognition and OCR.</p>
+<p>The observation does not include achievement counters. Although upstream
+Crafter returns achievement and inventory dictionaries together in <code>info</code>,
+only the inventory dictionary belongs in the Policy observation. Achievement
+events may remain in trusted transition metrics and sanitized training
+Feedback as they do for the RGB profile.</p>
+<h3 id="35-facing-sleeping-and-daylight">3.5 Facing, sleeping, and daylight</h3>
+<p><code>facing</code> is one exact string from:</p>
+<pre><code class="language-text">left
+right
+up
+down
+</code></pre>
+<p>It records the post-transition direction represented by the player sprite.
+Attempting a blocked movement still changes facing in upstream Crafter, so the
+extractor must read the resulting player state rather than infer direction from
+successful displacement.</p>
+<p><code>sleeping</code> is an exact Python <code>bool</code> matching the post-transition player sprite
+and sleep state.</p>
+<p><code>daylight</code> is a finite Python <code>float</code> in <code>[0.0, 1.0]</code> matching the upstream
+world daylight used to render the current observation. It is public because
+day/night is visibly encoded in RGB and is central to survival planning. The
+extractor must not add the upstream step counter or expose a separate hidden
+time phase.</p>
+<h2 id="4-explicit-privacy-boundary">4. Explicit privacy boundary</h2>
+<p>The following table is normative.</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Policy observation</th>
+<th>Trusted scoring/Feedback use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local <code>7 x 9</code> terrain</td>
+<td>Allowed</td>
+<td>Allowed</td>
+</tr>
+<tr>
+<td>Local visible entity type/variant</td>
+<td>Allowed</td>
+<td>Allowed</td>
+</tr>
+<tr>
+<td>Named inventory counts</td>
+<td>Allowed</td>
+<td>Allowed</td>
+</tr>
+<tr>
+<td>Facing, sleeping, daylight</td>
+<td>Allowed</td>
+<td>Allowed</td>
+</tr>
+<tr>
+<td>Full upstream <code>64 x 64 semantic</code> array</td>
+<td>Forbidden</td>
+<td>Do not publish</td>
+</tr>
+<tr>
+<td>Absolute <code>player_pos</code></td>
+<td>Forbidden</td>
+<td>Do not publish</td>
+</tr>
+<tr>
+<td>Environment or Policy seed</td>
+<td>Forbidden</td>
+<td>Do not publish</td>
+</tr>
+<tr>
+<td>World RNG or seed-derived identifier</td>
+<td>Forbidden</td>
+<td>Do not publish</td>
+</tr>
+<tr>
+<td>Achievement counters</td>
+<td>Forbidden</td>
+<td>Aggregate/unlock diagnostics only</td>
+</tr>
+<tr>
+<td><code>_hunger</code>, <code>_thirst</code>, <code>_fatigue</code>, <code>_recover</code></td>
+<td>Forbidden</td>
+<td>Do not publish</td>
+</tr>
+<tr>
+<td>Entity health/cooldowns/reload</td>
+<td>Forbidden</td>
+<td>Do not publish</td>
+</tr>
+<tr>
+<td>Exact plant age</td>
+<td>Forbidden</td>
+<td>Do not publish; ripe/young is allowed</td>
+</tr>
+<tr>
+<td>World chunks, object indices, Host paths</td>
+<td>Forbidden</td>
+<td>Do not publish</td>
+</tr>
+</tbody>
+</table>
+<p>The upstream <code>info["semantic"]</code> and <code>info["player_pos"]</code> values must never be
+copied wholesale into <code>Step.metrics</code>, <code>Feedback.content</code>, JSONL, NPZ, debug
+text, or exception messages. Absolute position may be used transiently on the
+trusted side only to select the local crop.</p>
+<p>The symbolic observation is Case-dependent by design, but it contains no Case
+identity. Public metadata may describe the fixed schema; it must not contain a
+sample generated from an Episode.</p>
+<h2 id="5-trusted-extraction-design">5. Trusted extraction design</h2>
+<p>Add a small, focused module such as:</p>
+<pre><code class="language-text">src/crafter_benchmarks/symbolic.py
+</code></pre>
+<p>It owns:</p>
+<ul>
+<li>upstream structural Protocols used for static typing;</li>
+<li>runtime validation of the pinned Crafter world/player representation;</li>
+<li>local coordinate conversion and boundary padding;</li>
+<li>terrain and entity translation;</li>
+<li>inventory, facing, sleeping, and daylight validation; and</li>
+<li>construction of the bounded <code>PolicyValue</code> observation.</li>
+</ul>
+<p>Do not distribute extraction logic across scoring modules or Feedback
+formatters.</p>
+<p>Upstream Crafter exposes a global semantic array only in <code>step()</code> information,
+and <code>reset()</code> returns RGB alone. The implementation must therefore extract both
+initial and post-Action symbolic observations from the trusted environment
+state. It must not execute an implicit noop during reset. An implicit noop would
+advance survival counters, RNG, creatures, reward, and horizon before the first
+Policy Action and would violate the Evaluation contract.</p>
+<p>The sequence is:</p>
+<pre><code class="language-text">reset:
+  upstream reset
+  validate returned RGB carrier
+  stabilize pinned Crafter chunk iteration
+  extract current local symbolic state
+  return symbolic PolicyValue
+
+step:
+  validate exact Action
+  upstream step exactly once
+  validate returned RGB/info/done values
+  update trusted achievement and scoring state
+  extract post-Action local symbolic state
+  return Step with symbolic observation
+</code></pre>
+<p>The extractor must not consume randomness or mutate the world. For any fixed
+EpisodeSpec and Action sequence, changing only <code>observation_profile</code> must leave
+upstream rewards, terminal flags, achievement events, inventory evolution, and
+world state unchanged.</p>
+<p>The existing adapter already audits pinned private Crafter structures to remove
+address-dependent chunk iteration. Using additional pinned internals for
+symbolic extraction is acceptable only with equally strict runtime drift checks
+and real-environment tests. Missing or malformed upstream state is an
+Environment fault. Do not silently fall back to RGB, emit an incomplete
+observation, or substitute guessed values.</p>
+<h2 id="6-benchmark-specification">6. Benchmark specification</h2>
+<p>For the symbolic profile, <code>BenchmarkSpec.observation_space</code> should describe the
+complete named mapping, not only say <code>type="dict"</code>. A representative structure
+is:</p>
+<pre><code class="language-python">{
+    &quot;type&quot;: &quot;mapping&quot;,
+    &quot;fields&quot;: {
+        &quot;terrain&quot;: {
+            &quot;policy_carrier&quot;: &quot;TensorValue&quot;,
+            &quot;dtype&quot;: &quot;uint8&quot;,
+            &quot;shape&quot;: [7, 9],
+            &quot;layout&quot;: &quot;row-major [row, column]&quot;,
+            &quot;value_meanings&quot;: {...},
+        },
+        &quot;entities&quot;: {
+            &quot;policy_carrier&quot;: &quot;TensorValue&quot;,
+            &quot;dtype&quot;: &quot;uint8&quot;,
+            &quot;shape&quot;: [7, 9],
+            &quot;layout&quot;: &quot;row-major [row, column]&quot;,
+            &quot;value_meanings&quot;: {...},
+        },
+        &quot;inventory&quot;: {
+            &quot;policy_carrier&quot;: &quot;mapping of exact int&quot;,
+            &quot;keys&quot;: [...],
+            &quot;minimum&quot;: 0,
+            &quot;maximum&quot;: 9,
+        },
+        &quot;facing&quot;: {
+            &quot;policy_carrier&quot;: &quot;str&quot;,
+            &quot;values&quot;: [&quot;left&quot;, &quot;right&quot;, &quot;up&quot;, &quot;down&quot;],
+        },
+        &quot;sleeping&quot;: {&quot;policy_carrier&quot;: &quot;bool&quot;},
+        &quot;daylight&quot;: {
+            &quot;policy_carrier&quot;: &quot;float&quot;,
+            &quot;minimum&quot;: 0.0,
+            &quot;maximum&quot;: 1.0,
+        },
+    },
+}
+</code></pre>
+<p>Metadata must name the observation contract, geometry, player center, terrain
+and entity tables, inventory keys, and privacy boundary. It must state that the
+profile is a Benchmark-authored local symbolic projection of Crafter 1.8.3,
+not an upstream registered Environment and not Craftax.</p>
+<p>The Action space and meaning remain the exact existing Crafter <code>0..16</code>
+contract. No action mask or prerequisite-validity hint is added. Placement and
+crafting Actions that lack prerequisites remain valid domain Actions with their
+ordinary no-effect behavior.</p>
+<h2 id="7-scoring-invariance">7. Scoring invariance</h2>
+<p>Observation selection does not alter scoring.</p>
+<p>For every existing scoring class, a fixed EpisodeSpec and fixed Action sequence
+must produce the same:</p>
+<ul>
+<li>number of upstream transitions;</li>
+<li>natural termination or horizon truncation;</li>
+<li>upstream transition rewards;</li>
+<li>achievement event order and counts;</li>
+<li>shaped transition components, when applicable;</li>
+<li>Episode return; and</li>
+<li>aggregate Feedback scalar.</li>
+</ul>
+<p>The only intended differences are:</p>
+<ul>
+<li><code>BenchmarkSpec.id</code>;</li>
+<li>observation space and description;</li>
+<li>Environment digest;</li>
+<li>Policy observations; and</li>
+<li>observation Feedback artifacts.</li>
+</ul>
+<p>Scores from independently chosen RGB and symbolic Policies answer a task
+difficulty question and should be reported as different Benchmark profiles.
+They are not interchangeable canonical Crafter results. A fixed-Action
+lockstep test may compare their dynamics and scores exactly.</p>
+<h2 id="8-training-feedback-and-artifacts">8. Training Feedback and artifacts</h2>
+<p>Trajectory JSONL retains the existing Action, reward, terminal, scoring, and
+achievement-event diagnostics. It must add the public
+<code>observation_profile="local-symbolic-v1"</code> to its header or manifest and must not
+add global semantic state or absolute position.</p>
+<p>Symbolic observations are small enough to retain completely for the existing
+detailed-training Episode limit. Store them losslessly in chunked NPZ files
+with source alignment identical to Policy calls:</p>
+<pre><code class="language-text">terrain:    uint8   [observation, 7, 9]
+entities:   uint8   [observation, 7, 9]
+inventory:  uint8   [observation, 16]
+facing:     uint8   [observation]
+sleeping:   bool    [observation]
+daylight:   float64 [observation]
+</code></pre>
+<p><code>inventory</code> uses the exact order listed in section 3.4. The NPZ manifest must
+repeat that order. <code>facing</code> uses artifact-only IDs
+<code>0=left, 1=right, 2=up, 3=down</code>; the live Policy carrier remains a string.</p>
+<p>The initial observation is index <code>0</code>; transition <code>t</code>'s result observation is
+index <code>t + 1</code>. Chunk boundaries must not omit or duplicate observations. Keep
+the existing observation-per-artifact bound unless measured artifact sizes
+justify a smaller public constant.</p>
+<p>Use a symbolic-specific manifest schema such as:</p>
+<pre><code class="language-text">crafter/local-symbolic-feedback-manifest/v1
+</code></pre>
+<p>Do not reinterpret an existing RGB manifest version. Symbolic NPZ artifacts
+remain authoritative. A derived colored-grid GIF may be added in a later
+version, but it is not required for v1 and must be labeled as a viewing aid.</p>
+<p>Validation and test splits continue to publish aggregate results only. They do
+not publish symbolic trajectories or NPZ observations. Existing Artifact count,
+per-Artifact byte, total byte, retention, and detailed-Episode limits remain in
+force.</p>
+<h2 id="9-baseline-program-and-agent-skill">9. Baseline Program and Agent Skill</h2>
+<p>The current RGB baseline and <code>optimize-crafter-policy</code> Skill must remain
+unchanged for RGB Runs.</p>
+<p>Add a separate packaged baseline entry point, for example:</p>
+<pre><code class="language-python">local_symbolic_baseline_program() -&gt; Program
+</code></pre>
+<p>The baseline must:</p>
+<ul>
+<li>validate the complete observation mapping and tensor shapes;</li>
+<li>return exact integer Actions in <code>0..16</code>;</li>
+<li>contain no fixed seed route or absolute-coordinate logic;</li>
+<li>use only local terrain/entities, inventory, facing, sleeping, daylight, and
+  Episode-local memory; and</li>
+<li>remain intentionally weak but executable through direct Evaluation.</li>
+</ul>
+<p>For the RGB-versus-symbolic ablation, the implemented baseline validates the
+different observation ABI and then mirrors the RGB baseline's seeded fallback
+Action stream. It intentionally does not exploit nearby symbolic labels before
+Policy evolution begins. Otherwise any baseline survival gain would be
+confounded with a hand-authored symbolic heuristic rather than measuring the
+coding Agent's ability to use the clearer observation.</p>
+<p>Add a new caller-selected Skill directory:</p>
+<pre><code class="language-text">skills/optimize-crafter-local-symbolic-policy/
+</code></pre>
+<p>Its <code>SKILL.md</code> should describe:</p>
+<ul>
+<li>live Policy carriers and row-major decoding;</li>
+<li>terrain/entity tables and coordinate orientation;</li>
+<li>player center and facing-to-front-cell mapping;</li>
+<li>the unchanged 17 Actions and progression dependencies;</li>
+<li>the fact that exact legal prerequisites are not supplied as an action mask;</li>
+<li>survival, facility adjacency, exploration, and Episode-local memory; and</li>
+<li>the symbolic NPZ and trajectory Feedback schemas.</li>
+</ul>
+<p>The wheel may package this Skill as a resource, but the Benchmark does not
+select it. <code>run_crafter_codex.py</code> freezes and passes the matching Skill only
+when the caller enables Benchmark Skills. Add an
+<code>--observation-profile {rgb,local-symbolic-v1}</code> launcher option and select the
+matching baseline and Skill. Do not pass both Crafter strategy Skills in one
+Run.</p>
+<h2 id="10-required-implementation-changes">10. Required implementation changes</h2>
+<p>The implementation session should expect changes in these ownership areas:</p>
+<pre><code class="language-text">src/crafter_benchmarks/config.py
+  add and validate observation_profile
+
+src/crafter_benchmarks/constants.py
+  own stable symbolic terrain/entity/inventory/facing tables
+
+src/crafter_benchmarks/symbolic.py
+  new trusted extraction and validation module
+
+src/crafter_benchmarks/environment.py
+  select RGB or symbolic Policy observation without changing stepping/scoring
+
+src/crafter_benchmarks/benchmark.py
+  select spec identity/schema and RGB or symbolic Feedback artifacts
+
+src/crafter_benchmarks/baseline.py
+src/crafter_benchmarks/programs/local_symbolic_baseline/
+  add the symbolic baseline without changing baseline_program()
+
+src/crafter_benchmarks/__init__.py
+  export public config/baseline additions
+
+scripts/run_crafter_codex.py
+  add observation selection and matching baseline/Skill selection
+
+skills/optimize-crafter-local-symbolic-policy/SKILL.md
+  add task-specific strategy guidance
+
+pyproject.toml
+  include the new Skill and baseline resources in wheel/sdist
+
+README.md and collection documentation
+  document IDs, schema, comparison limits, commands, and privacy boundary
+
+tests/test_crafter_benchmark.py
+tests/test_run_crafter_codex.py
+  add unit, real-environment, artifact, packaging, and launcher coverage
+</code></pre>
+<p>No code in the EvoPolicyGym Kernel should be changed for this feature.</p>
+<h2 id="11-required-tests">11. Required tests</h2>
+<p>At minimum, add the following tests.</p>
+<h3 id="configuration-and-specification">Configuration and specification</h3>
+<ul>
+<li>RGB remains the default and preserves existing observation bytes and IDs.</li>
+<li>Invalid observation profile types and names fail at configuration time.</li>
+<li>Symbolic plus MP4 is rejected.</li>
+<li>Symbolic IDs, observation schema, metadata, and Environment parameters are
+  exact.</li>
+<li>RGB and symbolic Environment digests differ.</li>
+<li>Every scoring class can construct both observation profiles.</li>
+</ul>
+<h3 id="real-environment-observation">Real-environment observation</h3>
+<ul>
+<li>Reset returns exactly the six public keys and does not advance Crafter.</li>
+<li>Terrain/entities are exact <code>uint8 (7, 9)</code> tensors in row-major order.</li>
+<li>The player is at <code>[3, 4]</code> after reset and every successful movement.</li>
+<li>The crop orientation agrees with left/right/up/down Actions.</li>
+<li>Blocked movement updates facing even when the player does not move.</li>
+<li>World-edge padding never leaks wrapped or opposite-edge cells.</li>
+<li>Underlying terrain remains present beneath an entity.</li>
+<li>Arrow direction and plant young/ripe variants use the correct IDs.</li>
+<li>Inventory values match the RGB HUD source state and remain exact ints in
+  <code>[0, 9]</code>.</li>
+<li>Sleeping and daylight match the post-transition state.</li>
+<li>No observation contains global semantic shape, absolute position,
+  achievements, hidden counters, seed, or Host data.</li>
+</ul>
+<p>Use narrow local test doubles for forced world-edge, arrow, and ripe-plant
+cases, but retain at least one real upstream reset/step test.</p>
+<h3 id="determinism-and-dynamics-invariance">Determinism and dynamics invariance</h3>
+<ul>
+<li><code>check_benchmark()</code> replays a symbolic fixture twice without issues.</li>
+<li>Repeated symbolic reset/Action sequences produce equal PolicyValue results.</li>
+<li>Parallel RGB and symbolic Environments using the same EpisodeSpec and fixed
+  Actions have identical rewards, metrics, termination, and Feedback score.</li>
+<li>Symbolic extraction does not change upstream RNG state or later world
+  evolution.</li>
+<li>A fresh Environment owns fresh Episode state and closes idempotently.</li>
+</ul>
+<h3 id="failure-domain">Failure domain</h3>
+<ul>
+<li>Every non-exact integer and every integer outside <code>0..16</code> raises
+  <code>InvalidAction</code> without advancing upstream state.</li>
+<li>Malformed or drifted upstream material/object/inventory state is an
+  Environment fault, not an <code>InvalidAction</code> or Policy penalty.</li>
+<li>A Policy failure stops before another Crafter step, as for RGB.</li>
+</ul>
+<h3 id="feedback-and-packaging">Feedback and packaging</h3>
+<ul>
+<li>Symbolic trajectory and NPZ artifacts reconstruct every live observation.</li>
+<li>Initial/result observation alignment and chunk boundaries are exact.</li>
+<li>Artifact fields, dtypes, inventory/facing order, manifest version, retention,
+  and byte bounds are public and tested.</li>
+<li>Public bytes contain no <code>environment_seed</code>, <code>policy_seed</code>, <code>player_pos</code>, Host
+  path, full-map array, or hidden counter name/value.</li>
+<li>Validation/test Feedback emits no detailed symbolic artifacts.</li>
+<li>The symbolic baseline completes direct Evaluation without Policy failure.</li>
+<li>The built wheel contains the symbolic baseline, Skill, typed package marker,
+  and documentation required at runtime.</li>
+<li>The launcher chooses exactly one matching baseline and Skill.</li>
+</ul>
+<h2 id="12-verification-commands">12. Verification commands</h2>
+<p>Run from the repository root unless noted:</p>
+<pre><code class="language-console">uv sync --project environments/crafter/crafter --extra dev
+uv run --project environments/crafter/crafter \
+  python -m unittest discover -s environments/crafter/crafter/tests
+uv run --project environments/crafter/crafter \
+  ruff check environments/crafter/crafter/src \
+             environments/crafter/crafter/tests \
+             environments/crafter/crafter/scripts
+uv run --project environments/crafter/crafter mypy
+uv build environments/crafter/crafter
+</code></pre>
+<p>Also run one short real direct Evaluation for RGB and symbolic using the same
+Episode seed and a fixed Action Program, then compare all non-observation
+outcomes. <code>ProcessExecution.unsafe()</code> is only an acknowledgement of local
+process authority; it is not a sandbox.</p>
+<h2 id="13-acceptance-criteria">13. Acceptance criteria</h2>
+<p>The feature is complete only when:</p>
+<ol>
+<li>existing RGB public defaults, observations, scoring, Feedback, tests, and
+   baseline behavior remain supported;</li>
+<li>the symbolic observation exactly matches sections 3 and 4;</li>
+<li>symbolic extraction consumes no Action, step, RNG draw, or hidden episode;</li>
+<li>fixed Actions prove dynamics and score invariance between RGB and symbolic;</li>
+<li>no global semantic map, absolute coordinate, seed, or hidden simulator state
+   appears in a Policy observation or public artifact;</li>
+<li>the symbolic baseline directly evaluates successfully;</li>
+<li>the independent distribution passes unittest, Ruff, strict mypy, build, and
+   wheel-content verification; and</li>
+<li>documentation clearly labels local symbolic as a separate non-canonical
+   observation profile inspired by Craftax rather than an upstream Crafter or
+   Craftax registration.</li>
+</ol>
+<h2 id="14-implemented-wire-order-note">14. Implemented wire-order note</h2>
+<p>EvoPolicyGym's canonical Policy wire encoding sorts mapping keys. Therefore,
+the six live observation fields and the 16 live inventory fields are defined
+by exact key sets, not by Python dictionary insertion order. The Artifact
+<code>inventory</code> tensor still uses the fixed order in section 3.4, which is repeated
+in <code>artifact-manifest.json</code>. Policy code must access live inventory values by
+name and use the manifest order only when decoding the dense NPZ array.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

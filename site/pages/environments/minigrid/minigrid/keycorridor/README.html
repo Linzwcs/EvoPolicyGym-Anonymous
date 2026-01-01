@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid KeyCorridor Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-keycorridor-benchmark">MiniGrid KeyCorridor Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/KeyCorridorEnv/">MiniGrid KeyCorridor</a>
+multi-room task.</p>
+<p>The Policy receives the upstream <code>7 × 7 × 3</code> egocentric symbolic image,
+compass direction, and a mission naming the target ball color. It must explore
+multiple rooms, acquire the key matching the locked door, unlock the target
+room, free its carrying slot, and pick up the mission-matching ball. The key
+and locked-door color match each other; they are independent of the mission
+ball color. The primary score is mean upstream Episode return; success rate
+remains separately reported.</p>
+<h2 id="install-and-test">Install and test</h2>
+<p>From the EvoPolicyGym repository root:</p>
+<pre><code class="language-console">uv sync --project environments/minigrid/minigrid/keycorridor --extra dev
+uv run --project environments/minigrid/minigrid/keycorridor \
+  python -m unittest discover \
+  -s environments/minigrid/minigrid/keycorridor/tests
+uv build environments/minigrid/minigrid/keycorridor
+</code></pre>
+<h2 id="public-api">Public API</h2>
+<pre><code class="language-python">from minigrid_keycorridor import (
+    KeyCorridorBenchmark,
+    KeyCorridorConfig,
+    baseline_program,
+)
+
+benchmark = KeyCorridorBenchmark(
+    KeyCorridorConfig(profile=&quot;S4R3&quot;),
+)
+program = baseline_program()
+</code></pre>
+<p>Available profiles are <code>S3R1</code>, <code>S3R2</code>, <code>S3R3</code>, <code>S4R3</code>, <code>S5R3</code>, and <code>S6R3</code>.
+<code>S</code> is the upstream room-size parameter and <code>R</code> is the number of room rows;
+every profile has three room columns.</p>
+<p>The spec defines image axes and channels, view orientation, carried-object and
+compass encodings, the exact reward formula, and termination rules. Feedback
+reports the Policy-visible progress ladder: target, key, and locked-door colors;
+first discovery steps; exploration-door toggles; key pickup/drop; target-door
+opening; target approach; current front and carried objects; remaining horizon;
+observation novelty; ineffective Actions; and per-Action usage. It explicitly
+diagnoses attempts to pick up the target while the key still occupies the
+carrying slot. It also includes return, step, truncation, and Policy-failure
+statistics. <code>trace.jsonl</code> contains a bounded semantic trace for at most four
+Episodes, retaining the first 128 and last 32 transitions of long Episodes. It
+contains no Episode seed, private Case identity, or Host path.</p>
+<p>The packaged baseline builds a relative multi-room map from egocentric
+observations, opens accessible doors during exploration, and uses shortest-path
+planning between the matching key, locked door, and ball. It consumes no
+private environment state.</p>
+<p>Tests that use <code>ProcessExecution.unsafe()</code> run trusted packaged code only.
+That backend is a local process mechanism, not a sandbox and not suitable for
+hostile Programs.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

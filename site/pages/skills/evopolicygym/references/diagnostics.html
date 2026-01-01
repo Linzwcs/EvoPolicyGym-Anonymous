@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Run diagnostics · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-run-diagnostics">EvoPolicyGym Run diagnostics</h1>
+<p>Inspect generated Run data read-only. Do not repair a Run by hand and do not
+copy Host logs into the Agent workspace.</p>
+<h2 id="record-layout">Record layout</h2>
+<pre><code class="language-text">run-root/
+├── run.json
+├── events.jsonl
+├── initial/program/
+├── workspace/
+│   ├── program/
+│   ├── feedback/
+│   └── skills/                 optional explicit Run inputs
+│       └── &lt;name&gt;/
+│           ├── SKILL.md
+│           └── ...             bundled references, scripts, or assets
+├── submissions/
+│   └── submission-NNNNNN/
+│       ├── program/
+│       ├── feedback.json
+│       └── artifacts/
+├── validation/                 only after successful configured Validation
+│   └── report.json             aggregate candidate evidence
+├── assessment/                 only after successful configured Assessment
+│   └── report.json             aggregate final-Program evidence
+└── agent/
+    ├── invocation.json
+    ├── instructions.md
+    ├── stdout.log
+    └── stderr.log
+</code></pre>
+<p><code>events.jsonl</code> is the persisted lifecycle sequence. <code>run.json</code> is the terminal
+manifest and authoritative summary. A submission appears under <code>submissions/</code>
+only after its Program and public Feedback commit successfully.</p>
+<h2 id="diagnose-in-order">Diagnose in order</h2>
+<ol>
+<li>Read <code>run.json</code>: benchmark ID, selected Skill names and digests, config,
+   terminal reason, final submission, ordered candidates, published
+   submissions, optional Validation and Assessment reports, and Agent exit.</li>
+<li>Read the final events in <code>events.jsonl</code>: determine whether failure occurred
+   before an Episode, during an Episode, after all Episodes, or during
+   publication.</li>
+<li>Inspect only the matching submission's public <code>feedback.json</code> and Artifact
+   sizes.</li>
+<li>Inspect <code>agent/stderr.log</code> and structured <code>agent/stdout.log</code> for provider or
+   command failures. Treat these as Host-owned execution records.</li>
+<li>Reproduce the smallest safe direct Evaluation only when the retained
+   records do not identify the fault.</li>
+</ol>
+<h2 id="interpret-common-outcomes">Interpret common outcomes</h2>
+<ul>
+<li><code>finished</code>: the Agent handed off candidates and the Host selected a final
+  published submission.</li>
+<li><code>budget_exhausted</code>: no Episode authority remains without a successful
+  selection.</li>
+<li><code>agent_exited</code>: the Agent process exited before a terminal selection.</li>
+<li><code>agent_failed</code>: the Agent could not start, timed out, or violated its process
+  contract.</li>
+<li><code>evaluation_failed</code>: trusted evaluation could not produce a valid result.</li>
+<li><code>validation_failed</code>: post-Agent candidate Validation failed; no partial
+  final selection or report is authoritative.</li>
+<li><code>assessment_failed</code>: held-out Evaluation failed after final selection. The
+  selected Program remains final, but there is no authoritative Assessment
+  result or fallback candidate.</li>
+</ul>
+<p>An Episode status of <code>policy_failed</code> is a scored Policy outcome, not a trusted
+evaluation failure. Its failure code is one of <code>exception</code>, <code>timeout</code>,
+<code>invalid_action</code>, or <code>protocol_error</code>.</p>
+<p>If all requested Episodes completed and <code>evaluation_failed</code> follows
+immediately, inspect <code>Benchmark.feedback()</code>, score validation, PolicyValue
+conversion, and Artifact limits. If <code>publication_failed</code> appears, inspect Run
+directory permissions, disk availability, serialization, and atomic file
+commit behavior.</p>
+<h2 id="keep-evidence-boundaries-intact">Keep evidence boundaries intact</h2>
+<ul>
+<li>Do not expose Agent logs, Host paths, seeds, Case identity, or execution
+  evidence through Feedback.</li>
+<li>Do not reinterpret Environment or Backend faults as zero reward.</li>
+<li>Do not refund reserved Episode budget after a trusted evaluation failure.</li>
+<li>Do not infer that a missing submission directory means its Episodes did not
+  execute; publication happens only after Evaluation and Feedback succeed.</li>
+<li>Remember that current local processes are not isolated even though the
+  logical workspace and log views are separate.</li>
+</ul>
+<p>Report the Run path, terminal reason, last committed lifecycle event, affected
+Submission or Host phase, evidence inspected, classified failure domain,
+probable cause, and the smallest safe reproduction. Do not mutate retained
+records unless the user explicitly requests artifact repair.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Authoring · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h2 id="distribution-boundary">Distribution boundary</h2>
+<p>An Environment is packaged as an independently installable Benchmark
+distribution. It depends only on the supported public EvoPolicyGym SDK and
+<code>evopolicygym.authoring</code>.</p>
+<p>The base Kernel does not import Benchmark distributions, and sibling
+distributions do not import one another.</p>
+<p>A distribution also owns the Policy-facing observation contract. It may
+translate an upstream simulator's positional array into a bounded semantic
+dictionary before the value crosses the Policy boundary. Public traces should
+retain that same value so Policy inputs and diagnostic evidence agree.</p>
+<p>A distribution owns:</p>
+<ul>
+<li>its upstream simulator dependency;</li>
+<li>typed Environment parameter validation and application;</li>
+<li>static <code>BenchmarkSpec</code>;</li>
+<li>deterministic Episode planning;</li>
+<li>one fresh Environment per Episode;</li>
+<li>Action validation and trusted Steps;</li>
+<li>scoring and public Feedback;</li>
+<li>baseline Programs and tests;</li>
+<li>local conformance fixtures.</li>
+</ul>
+<h2 id="benchmark-protocol">Benchmark protocol</h2>
+<p>External packages implement the structural <code>Benchmark</code> protocol:</p>
+<pre><code class="language-python">from collections.abc import Sequence
+
+from evopolicygym.authoring import (
+    BenchmarkSpec,
+    Environment,
+    EpisodeRecord,
+    EpisodeSpec,
+    Feedback,
+)
+
+
+class ExampleBenchmark:
+    @property
+    def spec(self) -&gt; BenchmarkSpec:
+        ...
+
+    def episodes(
+        self,
+        split: str,
+        *,
+        seed: int,
+        count: int,
+    ) -&gt; Sequence[EpisodeSpec]:
+        ...
+
+    def make_environment(self, episode: EpisodeSpec) -&gt; Environment:
+        ...
+
+    def feedback(
+        self,
+        episodes: Sequence[EpisodeRecord],
+    ) -&gt; Feedback:
+        ...
+</code></pre>
+<p>The object does not need to inherit from a framework base class. Runtime
+conformance is structural.</p>
+<h2 id="benchmarkspec">BenchmarkSpec</h2>
+<p><code>BenchmarkSpec</code> is static, public, and independent from an open Environment:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Stable, non-empty Benchmark identity.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>Public task description.</td>
+</tr>
+<tr>
+<td><code>observation_space</code></td>
+<td>Bounded <code>PolicyValue</code> description.</td>
+</tr>
+<tr>
+<td><code>action_space</code></td>
+<td>Bounded <code>PolicyValue</code> description.</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>String-keyed, Case-independent public metadata.</td>
+</tr>
+<tr>
+<td><code>environment_parameters</code></td>
+<td>Exact public values bound to Environment construction.</td>
+</tr>
+<tr>
+<td><code>max_episode_steps</code></td>
+<td>Positive hard Episode horizon.</td>
+</tr>
+<tr>
+<td><code>primary_metric</code></td>
+<td>Name of the score represented by <code>Feedback.score</code>.</td>
+</tr>
+<tr>
+<td><code>score_direction</code></td>
+<td>Exactly <code>maximize</code> or <code>minimize</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Do not put private scenarios, Environment seeds, paths, credentials, or
+scorer objects in the specification.</p>
+<p>Coding Agent Skills are orthogonal to Benchmark authoring. A distribution may
+document a compatible Skill, but must not load or reference it from
+<code>BenchmarkSpec</code>. The Run caller explicitly captures selected Skill
+directories and the Host publishes them read-only under <code>workspace/skills/</code>.</p>
+<p>The distribution owns its typed constructor. For example,
+<code>FrozenLakeBenchmark(map_name="8x8", is_slippery=True)</code> validates and retains
+those arguments, publishes the exact values through <code>environment_parameters</code>,
+and applies the same bound values in <code>make_environment()</code>. The Kernel computes
+<code>environment_digest</code>; authors do not provide it.</p>
+<h2 id="episode-planning">Episode planning</h2>
+<p><code>episodes(split, seed, count)</code> must:</p>
+<ul>
+<li>return exactly <code>count</code> <code>EpisodeSpec</code> values;</li>
+<li>be deterministic for the same complete input;</li>
+<li>keep scenario values trusted and Policy-invisible;</li>
+<li>support only documented splits;</li>
+<li>avoid opening an Environment.</li>
+</ul>
+<p>An <code>EpisodeSpec</code> contains an unsigned 64-bit <code>environment_seed</code> and an optional
+bounded <code>scenario</code>.</p>
+<h2 id="environment-protocol">Environment protocol</h2>
+<p>One fresh Environment instance serves exactly one Episode:</p>
+<pre><code class="language-python">from evopolicygym.authoring import InvalidAction, Step
+from evopolicygym.policy import PolicyValue
+
+
+class ExampleEnvironment:
+    def reset(self) -&gt; PolicyValue:
+        ...
+
+    def step(self, action: PolicyValue) -&gt; Step:
+        if action not in (0, 1):
+            raise InvalidAction
+        ...
+        return Step(
+            observation=next_observation,
+            reward=reward,
+            terminated=terminated,
+            truncated=truncated,
+            metrics=private_metrics,
+        )
+
+    def close(self) -&gt; None:
+        ...
+</code></pre>
+<p><code>step()</code> receives the complete unmodified Policy Action. Raise
+<code>InvalidAction</code> rather than clipping or substituting it. <code>close()</code> must be safe
+on every evaluator exit path.</p>
+<h2 id="feedback">Feedback</h2>
+<p><code>feedback(records)</code> receives trusted <code>EpisodeRecord</code> values and returns:</p>
+<pre><code class="language-python">Feedback(
+    score=mean_return,
+    content={
+        &quot;metrics&quot;: {&quot;mean_return&quot;: mean_return},
+        &quot;summary&quot;: &quot;Public diagnostic text.&quot;,
+    },
+    artifacts=(...),
+)
+</code></pre>
+<p>The scalar score is Kernel-required. <code>content</code> and artifacts are
+Benchmark-defined, but they must remain public, bounded, and free of Case
+identity, Environment seeds, Host paths, credentials, and private execution
+evidence.</p>
+<p>For visual environments, preserve the original captured RGB values losslessly
+in Benchmark-owned bulk artifacts with explicit step alignment and a bounded
+sampling manifest. Browser video and animated GIFs are presentation
+derivatives and should not be the only visual evidence. State separately
+whether the artifact is complete for its configured capture schedule and
+whether that schedule covers every Episode step.</p>
+<p>Policy failure must not be rewritten as an Environment reward unless the
+Benchmark contract explicitly defines such scoring from the sanitized record.
+Trusted faults must never become Policy penalties.</p>
+<h2 id="conformance">Conformance</h2>
+<p>The public checker replays fixed Action sequences twice:</p>
+<pre><code class="language-python">from evopolicygym.authoring import (
+    BenchmarkFixture,
+    EpisodeSpec,
+    check_benchmark,
+)
+
+report = check_benchmark(
+    benchmark,
+    fixtures=(
+        BenchmarkFixture(
+            episode=EpisodeSpec(environment_seed=7),
+            actions=(0, 1, 1),
+        ),
+    ),
+)
+report.raise_for_errors()
+</code></pre>
+<p>Conformance checks structural compatibility, deterministic replay, returned
+Step values, termination ordering, and cleanup. Passing is local evidence, not
+formal admission or certification.</p>
+<h2 id="package-checklist">Package checklist</h2>
+<ul>
+<li>Independent <code>pyproject.toml</code> and version.</li>
+<li>Dependency on the supported <code>evopolicygym</code> series only.</li>
+<li>Public import package distinct from the Kernel.</li>
+<li>Packaged baseline Program.</li>
+<li>Deterministic <code>train</code>, <code>validation</code>, and <code>test</code> planning.</li>
+<li>Unit tests for valid, invalid, failed, and cleanup paths.</li>
+<li>Explicit unsafe-process acknowledgement in any local CLI.</li>
+<li>If an Agent skill is supplied, package it with the distribution and keep it
+  free of private Episode data.</li>
+<li>No private Kernel imports.</li>
+</ul>
+<p>Current implemented examples are
+<a href="../environments/gymnasium/classic_control/cartpole/README.html"><code>environments/gymnasium/classic_control/cartpole</code></a>,
+<a href="../environments/gymnasium/classic_control/acrobot/README.html"><code>environments/gymnasium/classic_control/acrobot</code></a>,
+<a href="../environments/gymnasium/classic_control/mountain_car/README.html"><code>environments/gymnasium/classic_control/mountain_car</code></a>,
+<a href="../environments/gymnasium/classic_control/mountain_car_continuous/README.html"><code>environments/gymnasium/classic_control/mountain_car_continuous</code></a>,
+<a href="../environments/gymnasium/classic_control/pendulum/README.html"><code>environments/gymnasium/classic_control/pendulum</code></a>,
+and
+<a href="../environments/jackdaw/balatro/README.html"><code>environments/jackdaw/balatro</code></a>.</p>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="../environments/README.html">Environment collection →</a></li>
+<li><a href="evaluation.html">Evaluation →</a></li>
+<li><a href="runs.html">Coding Agent Runs →</a></li>
+<li><a href="runtime.html">Execution and safety →</a></li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid DoorKey Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-doorkey-benchmark">MiniGrid DoorKey Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/DoorKeyEnv/">MiniGrid DoorKey</a>
+partially observable navigation task.</p>
+<p>The Policy sees the upstream <code>7 × 7 × 3</code> egocentric symbolic image, compass
+direction, and mission text. It must explore the room, pick up the yellow key,
+unlock the yellow door, and reach the green goal. The primary score is Episode
+return from the upstream time-decaying reward; success rate remains separately
+reported.</p>
+<p>The spec defines image axes <code>[view_x, view_y, channel]</code>, channel order
+<code>[object, color, state]</code>, agent position <code>(3,6)</code>, view orientation, compass
+codes, every symbolic code, Action meanings, horizon, and exact time-decaying
+success reward. Forward decreases <code>view_y</code>; right increases <code>view_x</code>.</p>
+<h2 id="install-and-test">Install and test</h2>
+<p>From the EvoPolicyGym repository root:</p>
+<pre><code class="language-console">uv sync --project environments/minigrid/minigrid/doorkey --extra dev
+uv run --project environments/minigrid/minigrid/doorkey \
+  python -m unittest discover \
+  -s environments/minigrid/minigrid/doorkey/tests
+uv build environments/minigrid/minigrid/doorkey
+</code></pre>
+<h2 id="public-api">Public API</h2>
+<pre><code class="language-python">from minigrid_doorkey import (
+    DoorKeyBenchmark,
+    DoorKeyConfig,
+    baseline_program,
+)
+
+benchmark = DoorKeyBenchmark(DoorKeyConfig(profile=&quot;8x8&quot;))
+program = baseline_program()
+</code></pre>
+<p>Available profiles are <code>5x5</code>, <code>6x6</code>, <code>8x8</code>, and <code>16x16</code>.</p>
+<p>Feedback exposes the full observable funnel: first seeing the key, picking it
+up, first seeing and opening the door, seeing the goal, and succeeding. It also
+reports the first step of every milestone, where Episodes stalled, remaining
+horizon, observation novelty, ineffective Actions, per-Action usage, aggregate
+return, truncations, and Policy failures. <code>trace.jsonl</code> contains a bounded
+semantic trace for at most four Episodes; long traces retain the first 128 and
+last 32 transitions. Milestones are derived only from Policy-visible symbolic
+observations and actions. Feedback contains no Episode seed, hidden global
+position, private Case identity, or Host path.</p>
+<p>The packaged baseline constructs a relative map from its egocentric
+observations and uses shortest-path planning between the key, door, and goal.
+It consumes no private environment state.</p>
+<p>Tests that use <code>ProcessExecution.unsafe()</code> run trusted packaged code only.
+That backend is a local process mechanism, not a sandbox and not suitable for
+hostile Programs.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

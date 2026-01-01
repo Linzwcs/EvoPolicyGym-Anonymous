@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Experiment catalog · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="experiment-catalog">Experiment catalog</h1>
+<p>Choose experiments from observed failure signatures, not from a generic Joker
+tier list. Run an opportunity audit before changing code, then use matched
+train indices as defined in <code>experiment-protocol.md</code>.</p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li>Select the next experiment</li>
+<li>Correctness and observability</li>
+<li>Scoring and hand choice</li>
+<li>Draws and card throughput</li>
+<li>Build and shop planning</li>
+<li>Consumables and deck shaping</li>
+<li>Ordering and copy effects</li>
+<li>Bosses and late-game horizon</li>
+<li>Avoid low-value experiments</li>
+</ul>
+<h2 id="select-the-next-experiment">Select the next experiment</h2>
+<p>Use terminal and replay evidence to identify the active bottleneck:</p>
+<table>
+<thead>
+<tr>
+<th>Evidence signature</th>
+<th>First experiment family</th>
+<th>Likely model layer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Any Policy failure</td>
+<td>Action admission and state transition</td>
+<td>L0/L6</td>
+</tr>
+<tr>
+<td>High <code>≤5</code> count</td>
+<td>early scoring or discard safety</td>
+<td>L3–L5</td>
+</tr>
+<tr>
+<td>Median 10–11, weak <code>≥18</code></td>
+<td>build scaling, replacement, economy</td>
+<td>L2/L4</td>
+</tr>
+<tr>
+<td>Frequent <code>≥18</code>, few wins</td>
+<td>late horizon, Boss constraints, XMult</td>
+<td>L1/L4/L5</td>
+</tr>
+<tr>
+<td>High cash at death</td>
+<td>purchase threshold or bounded reroll</td>
+<td>L4/L5</td>
+</tr>
+<tr>
+<td>Full weak Joker slots</td>
+<td>marginal slot value and replacement</td>
+<td>L2/L4</td>
+</tr>
+<tr>
+<td>Score prediction error</td>
+<td>effect phases and calibration</td>
+<td>L1/L3</td>
+</tr>
+<tr>
+<td>Many draws, weak final hands</td>
+<td>outs and play/discard horizon</td>
+<td>L3/L4</td>
+</tr>
+<tr>
+<td>Candidate rarely changes actions</td>
+<td>opportunity audit or L5 integration</td>
+<td>L5</td>
+</tr>
+<tr>
+<td>Gains plus catastrophic regressions</td>
+<td>eligibility, confidence, fallback</td>
+<td>L3–L5</td>
+</tr>
+</tbody>
+</table>
+<p>Prefer the experiment with the largest combination of eligible states,
+decision impact, expected late-run value, and testability. Do not implement
+several rows at once. Confirm the suspected layer with
+<code>modeling-stack.md</code> before writing code.</p>
+<p>For every experiment predeclare:</p>
+<ul>
+<li>eligible public states;</li>
+<li>control and candidate digests;</li>
+<li>matched development selector;</li>
+<li>primary metric and safety metrics;</li>
+<li>expected action changes;</li>
+<li>rejection and exact-revert conditions.</li>
+</ul>
+<h2 id="correctness-and-observability">Correctness and observability</h2>
+<p><strong>Action contract hardening</strong></p>
+<ul>
+<li>Signal: <code>invalid_action</code>, exceptions, stale targets, or pack/consumable paths
+  absent from tests.</li>
+<li>Change: centralize exact action construction and validate descriptor fields,
+  target membership, uniqueness, cardinality, and selection order.</li>
+<li>Audit: replay every public state with nonempty legal actions.</li>
+<li>Gate: zero Policy failures. Do not trade correctness for score.</li>
+</ul>
+<p><strong>State-transition reset</strong></p>
+<ul>
+<li>Signal: behavior depends on the preceding Blind, shop, or Episode.</li>
+<li>Change: reset round, shop, pending transaction, and consecutive-action state
+  from public identity changes.</li>
+<li>Audit: replay two Episodes sequentially through one test harness while
+  creating a fresh Policy instance per Episode.</li>
+<li>Reject: any state survives beyond its documented scope.</li>
+</ul>
+<p><strong>Modular extraction checkpoint</strong></p>
+<ul>
+<li>Signal: duplicate raw parsing, Action construction, scoring, valuation, or a
+  strategy orchestrator that owns unrelated mechanics and mutable state.</li>
+<li>Change: extract one pure leaf responsibility behind an explicit contract,
+  route every caller to it, and remove the duplicate owner.</li>
+<li>Audit: compare the earliest moved seam, ranked intents, and final Actions on
+  authorized public replay fixtures.</li>
+<li>Gate: require behavioral equivalence. Use matched same-index evidence only
+  when replay cannot cover runtime composition, and expect score neutrality.</li>
+<li>Reject: any unexplained decision change, import cycle, second authoritative
+  model, or bundled strategic threshold change.</li>
+</ul>
+<h2 id="scoring-and-hand-choice">Scoring and hand choice</h2>
+<p><strong>Frequent effect calibration</strong></p>
+<ul>
+<li>Signal: systematic predicted/actual error in <code>last_hand</code>.</li>
+<li>Change: add the highest-frequency missing visible effect at the correct
+  scored-card, held-card, main-additive, main-XMult, or retrigger phase.</li>
+<li>Audit: measure error before and after on development replay and count changed
+  hand rankings.</li>
+<li>Guard: preserve unknown-effect confidence; avoid global text heuristics.</li>
+<li>Reject: calibration improves but matched Episode outcomes or safety worsen.</li>
+</ul>
+<p><strong>Selector-horizon coupling</strong></p>
+<ul>
+<li>Signal: the numerically best immediate hand consumes the only useful draw or
+  leaves an impossible Blind deficit.</li>
+<li>Change: rank actions by survival over remaining hands/discards, not one-hand
+  score alone.</li>
+<li>Audit: compare immediate score, residual target, future draws, and hands
+  remaining on changed states.</li>
+<li>Guard: retain a high-confidence lethal-hand fast path.</li>
+</ul>
+<h2 id="draws-and-card-throughput">Draws and card throughput</h2>
+<p><strong>Discard expected value</strong></p>
+<ul>
+<li>Signal: repeated low-value discards, chasing too few outs, or preserving the
+  wrong made hand.</li>
+<li>Change: estimate visible outs and post-draw value using remaining-deck
+  composition, build activation, and discard count.</li>
+<li>Guard: Boss legality, hidden-card uncertainty, and a survival threshold.</li>
+<li>Reject: early deaths rise even if average Blind improves.</li>
+</ul>
+<p><strong>Safe kicker cycling</strong></p>
+<ul>
+<li>Signal: no discards remain, the current hand is nonlethal, and unused play
+  slots could replace junk before a future hand.</li>
+<li>Change: append only low, unmodified cards outside the scoring hand, valuable
+  draw structures, and held-card effects.</li>
+<li>Guard: activate only with future hands, adequate score margin, and no Boss
+  conflict.</li>
+<li>Reject: any material Ante 1 regression; narrow eligibility before retesting.</li>
+</ul>
+<h2 id="build-and-shop-planning">Build and shop planning</h2>
+<p><strong>Marginal Joker replacement</strong></p>
+<ul>
+<li>Signal: full slots, weak role coverage, cash available, and affordable shop
+  inventory.</li>
+<li>Change: compare owned and offered Jokers in one shared build-value model;
+  execute replacement as a sell intent followed by a revalidated purchase.</li>
+<li>Audit: count eligible shops, planned sales, completed purchases, and cleared
+  stale intents.</li>
+<li>Guard: demand a margin covering sell loss, interest, uncertainty, and slot
+  disruption.</li>
+</ul>
+<p><strong>Bounded paid reroll</strong></p>
+<ul>
+<li>Signal: full slots, large cash surplus, no qualifying purchase, weak
+  projected scaling.</li>
+<li>Change: permit one paid search action per shop above a reserve and Ante
+  threshold.</li>
+<li>Guard: explicit per-shop counter and survival reserve.</li>
+<li>Reject: early economy or median progress worsens; do not add repeated rerolls
+  before the one-reroll experiment passes.</li>
+</ul>
+<p><strong>Role-completion valuation</strong></p>
+<ul>
+<li>Signal: builds contain redundant Chips or additive Mult but lack reliable
+  multiplicative growth.</li>
+<li>Change: value marginal role coverage, activation, scaling rate, and switching
+  cost rather than names.</li>
+<li>Guard: do not discard a mature engine for a speculative rare effect.</li>
+</ul>
+<h2 id="consumables-and-deck-shaping">Consumables and deck shaping</h2>
+<p><strong>Established-hand Planet use</strong></p>
+<ul>
+<li>Signal: a stable primary hand exists and a matching Planet is legal and
+  affordable.</li>
+<li>Change: value permanent level growth against reserve and build maturity.</li>
+<li>Guard: require explicit public hand match; do not guess targets.</li>
+</ul>
+<p><strong>Targeted Tarot or Spectral use</strong></p>
+<ul>
+<li>Signal: legal target descriptors and visible effect semantics identify a
+  beneficial transformation.</li>
+<li>Change: generate targets through the Action gateway and score the resulting
+  deck-shape change.</li>
+<li>Audit: first prove the action can trigger and targets remain legal.</li>
+<li>Reject: speculative text parsing or action-neutral implementation.</li>
+</ul>
+<h2 id="ordering-and-copy-effects">Ordering and copy effects</h2>
+<p><strong>Main Mult ordering</strong></p>
+<ul>
+<li>Signal: main-stage XMult resolves before later main-stage additive Mult.</li>
+<li>Change: repair one dependency inversion per observation.</li>
+<li>Guard: exclude scored-card, held-card, per-card, retrigger, and unresolved
+  copy effects.</li>
+</ul>
+<p><strong>Copy dependency graph</strong></p>
+<ul>
+<li>Signal: Blueprint or Brainstorm has a modeled target whose copied value
+  changes with the current hand.</li>
+<li>Change: evaluate explicit source-to-target dependencies and legal moves.</li>
+<li>Audit: count actual copy states and changed targets before spending Episodes.</li>
+<li>Reject: multiple-copy chains are unresolved or the experiment is nearly
+  behavior-neutral.</li>
+</ul>
+<h2 id="bosses-and-late-game-horizon">Bosses and late-game horizon</h2>
+<p><strong>Boss constraint planner</strong></p>
+<ul>
+<li>Signal: legal but zero-value hands, forbidden repeats, one-hand limits, or
+  face-down information.</li>
+<li>Change: filter candidates by public Boss rules before scoring.</li>
+<li>Guard: express constraints semantically; avoid name-only patches when the
+  rule text or structured parameters suffice.</li>
+</ul>
+<p><strong>Threat-ratio spending</strong></p>
+<ul>
+<li>Signal: the build survives mid-game but lacks projected Ante 7–8 throughput.</li>
+<li>Change: compare conservative scoring capacity with upcoming Blind pressure
+  and increase purchase/reroll urgency as the ratio falls.</li>
+<li>Audit: inspect whether changed spending occurs before late deaths, not after
+  the build is already doomed.</li>
+<li>Guard: preserve early interest when survival capacity is comfortably above
+  pressure.</li>
+</ul>
+<h2 id="avoid-low-value-experiments">Avoid low-value experiments</h2>
+<p>Do not spend environment budget on:</p>
+<ul>
+<li>a feature that changes no replay decision;</li>
+<li>a more exact score component without testing the downstream selector;</li>
+<li>one global threshold tuned from a single index;</li>
+<li>a named-Joker bonus that duplicates structured role modeling;</li>
+<li>generic Joker sorting across unresolved copy dependencies;</li>
+<li>a broad rule whose gain comes with large early regressions;</li>
+<li>confirmation replay used to create another patch;</li>
+<li>a module refactor bundled with a strategic behavior change;</li>
+<li>several capabilities combined in one candidate.</li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

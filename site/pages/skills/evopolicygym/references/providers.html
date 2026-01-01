@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Coding Agent provider integration · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="coding-agent-provider-integration">Coding Agent provider integration</h1>
+<p>Integrate another command-line Coding Agent through the public structural
+<code>CodingAgent</code> contract.</p>
+<p>The Kernel includes first-party <code>Codex</code>, <code>ClaudeCode</code>, <code>KimiCode</code>, and <code>Qoder</code>
+translations. They all retain the unchanged Host task and use the same generic
+process runner. <code>ClaudeCode</code> selects bare, non-persistent print mode. Kimi Code
+and Qoder do not currently expose an equivalent no-session-persistence flag,
+so callers that require isolated CLI configuration and session history should
+set a dedicated <code>KIMI_CODE_HOME</code> or <code>QODER_CONFIG_DIR</code> before the Run.</p>
+<p>Translate the Host-owned <code>AgentTask</code> into an <code>AgentInvocation</code>. Do not author
+Run instructions, duplicate Agent Session syntax, or move process supervision
+into the provider.</p>
+<pre><code class="language-python">from evopolicygym.agents import AgentTask, command_invocation
+
+
+class ExampleAgent:
+    def build_invocation(self, task: AgentTask):
+        return command_invocation(
+            (&quot;example-agent&quot;, &quot;--prompt&quot;, task.instructions),
+            recorded_command=(
+                &quot;example-agent&quot;,
+                &quot;--prompt&quot;,
+                &quot;@agent/instructions.md&quot;,
+            ),
+            identity={&quot;provider&quot;: &quot;example-agent&quot;},
+            instructions=task.instructions,
+            inherited_environment=(&quot;HOME&quot;, &quot;EXAMPLE_API_KEY&quot;),
+        )
+</code></pre>
+<ul>
+<li>Keep provider-specific CLI translation and identity in the provider module.</li>
+<li>Pass the exact Host task instructions without rewriting Kernel semantics.</li>
+<li>Inherit only explicitly required environment-variable names.</li>
+<li>Never place credentials in <code>recorded_command</code>, identity, instructions,
+  Feedback, Artifacts, or retained public results.</li>
+<li>Let the Run-owned process mechanism start, supervise, and reap the Agent.</li>
+<li>Keep provider-specific model and reasoning selections out of <code>RunConfig</code> and
+  <code>BenchmarkSpec</code>.</li>
+</ul>
+<p>Verify import safety, deterministic argument translation, recorded-command
+sanitization, required identity fields, environment allowlisting, and invalid
+configuration failures. Report the provider module, translated invocation,
+retained identity, inherited environment names, tests run, and any remaining
+provider-specific limitation.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

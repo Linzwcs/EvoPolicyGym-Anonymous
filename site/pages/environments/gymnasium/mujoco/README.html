@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Gymnasium MuJoCo · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="gymnasium-mujoco">Gymnasium MuJoCo</h1>
+<p>MuJoCo environments provide seeded continuous-control tasks using Gymnasium's
+official built-in models. Every leaf is independently installable and pins the
+shared <code>gymnasium[mujoco]</code> dependency in its own lockfile.</p>
+<p>Only current <code>v5</code> tasks are targeted. Deprecated <code>mujoco-py</code> registrations and
+the superseded <code>v4</code> contracts are not separate Benchmarks.</p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Status</th>
+<th style="text-align: right;">Max steps</th>
+<th>Observation</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="reacher/README.html">Reacher-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">50</td>
+<td>10 named arm/target values</td>
+<td>2 joint torques</td>
+</tr>
+<tr>
+<td><a href="pusher/README.html">Pusher-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">100</td>
+<td>23 named arm, object, and goal values</td>
+<td>7 joint torques</td>
+</tr>
+<tr>
+<td><a href="inverted_pendulum/README.html">InvertedPendulum-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>4 named cart/pole values</td>
+<td>1 force</td>
+</tr>
+<tr>
+<td><a href="inverted_double_pendulum/README.html">InvertedDoublePendulum-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>9 named cart/two-pole values</td>
+<td>1 force</td>
+</tr>
+<tr>
+<td><a href="swimmer/README.html">Swimmer-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>8 or 10 named body values</td>
+<td>2 joint torques</td>
+</tr>
+<tr>
+<td><a href="hopper/README.html">Hopper-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>11 or 12 named body values</td>
+<td>3 joint torques</td>
+</tr>
+<tr>
+<td><a href="walker2d/README.html">Walker2d-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>17 or 18 named body values</td>
+<td>6 joint torques</td>
+</tr>
+<tr>
+<td><a href="half_cheetah/README.html">HalfCheetah-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>17 or 18 named body values</td>
+<td>6 joint torques</td>
+</tr>
+<tr>
+<td><a href="ant/README.html">Ant-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>27/29 body values plus 78 nested contact values</td>
+<td>8 joint torques</td>
+</tr>
+<tr>
+<td><a href="humanoid/README.html">Humanoid-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>45/47 state plus optional nested dynamics</td>
+<td>17 joint torques</td>
+</tr>
+<tr>
+<td><a href="humanoid_standup/README.html">HumanoidStandup-v5</a></td>
+<td>Implemented</td>
+<td style="text-align: right;">1000</td>
+<td>45/47 state plus optional nested dynamics</td>
+<td>17 joint torques</td>
+</tr>
+</tbody>
+</table>
+<p>Official XML model selection is Host-owned and fixed to Gymnasium's packaged
+asset for each Benchmark. Custom XML paths and rendering/camera parameters are
+not Policy-visible environment parameters.</p>
+<p>HalfCheetah additionally publishes bounded, lossless rendered-frame evidence
+and an H.264 MP4 derived from the same step-aligned captures. The remaining
+MuJoCo distributions currently retain their semantic state traces and are the
+next visual-evidence rollout target.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

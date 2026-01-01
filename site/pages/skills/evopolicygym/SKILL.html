@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym · EvoPolicyGym</title><link rel="stylesheet" href="../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../docs/index.html">Documentation</a><a href="../../../../index.html#environments">Environments</a><a href="../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym">EvoPolicyGym</h1>
+<p>Use this Skill for caller-side EvoPolicyGym work. Keep Host orchestration,
+Benchmark behavior, the Coding Agent workspace, and Episode-local Policy
+execution as separate authority boundaries.</p>
+<h2 id="route-the-task">Route the task</h2>
+<p>Load only the references required by the current task:</p>
+<ul>
+<li><strong>Install or select packages:</strong> read
+  <a href="references/setup.html">references/setup.md</a>.</li>
+<li><strong>Build or directly evaluate a Policy Program:</strong> read
+  <a href="references/evaluation.html">references/evaluation.md</a>.</li>
+<li><strong>Configure and execute a Coding Agent Run:</strong> read
+  <a href="references/run.html">references/run.md</a>.</li>
+<li><strong>Integrate another Coding Agent provider:</strong> read
+  <a href="references/providers.html">references/providers.md</a>.</li>
+<li><strong>Author or modify a Benchmark distribution:</strong> read
+  <a href="references/authoring.html">references/authoring.md</a> completely before editing
+  it.</li>
+<li><strong>Diagnose a retained Run:</strong> read
+  <a href="references/diagnostics.html">references/diagnostics.md</a> and inspect the records
+  without repairing them.</li>
+<li><strong>Change the Kernel:</strong> read the repository <code>AGENTS.md</code> and <code>ARCHITECTURE.md</code>
+  before editing, then follow their ownership and verification rules.</li>
+</ul>
+<p>When a task spans workflows, perform setup or authoring first, direct
+Evaluation second, and a Coding Agent Run last.</p>
+<h2 id="preserve-the-command-and-skill-boundaries">Preserve the command and Skill boundaries</h2>
+<ul>
+<li>Treat <code>evopolicygym</code> as the Host/operator command presentation and use the
+  public Python SDK for Evaluation, Run, and authoring workflows.</li>
+<li>Treat <code>evopolicygym-session</code> as an Agent-only client projected into one
+  active Run. The Host-generated task is authoritative for its current
+  submit, finish, workspace, and budget instructions.</li>
+<li>Do not invoke Session commands as an external operator or duplicate their
+  syntax in a provider integration.</li>
+<li>Pass Benchmark-specific Skills explicitly as immutable
+  <code>AgentSkill.from_directory()</code> inputs to <code>run()</code>. They are independent Run
+  inputs, not Benchmark properties, and are never exposed to the Policy.</li>
+<li>Do not use this general Skill as a substitute for a task-specific
+  Benchmark-strategy Skill inside a Run.</li>
+</ul>
+<h2 id="preserve-public-and-security-boundaries">Preserve public and security boundaries</h2>
+<ul>
+<li>Confirm Python 3.12, the installed EvoPolicyGym version, and the selected
+  Environment distribution before constructing imports or commands.</li>
+<li>Treat every Environment as an independently installable distribution. Read
+  its package documentation instead of guessing imports, factories, extras, or
+  task configuration.</li>
+<li>Use only the supported public SDK. External distributions may import
+  <code>evopolicygym.authoring</code>; they must not import private <code>_...</code> modules.</li>
+<li>Keep Policy-visible values within the bounded <code>PolicyValue</code> ABI. Never cross
+  the Policy boundary with Host paths, descriptors, credentials, private
+  Episode seeds, Case identity, scorer objects, or custom Python objects.</li>
+<li>Treat <code>ProcessExecution.unsafe()</code> as an acknowledgement, not isolation. The
+  Agent and Policy execute with the current operating-system user's authority.</li>
+<li>Never silently replace a requested virtualization profile with local process
+  execution.</li>
+</ul>
+<p>Follow the selected reference's workflow-specific verification and reporting
+checklist. Report only fields relevant to the operation performed.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

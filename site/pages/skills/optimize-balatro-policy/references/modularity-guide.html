@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Modular Policy architecture · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="modular-policy-architecture">Modular Policy architecture</h1>
+<p>Use modules to give every Policy responsibility one owner and one dependency
+direction. Use <code>modeling-stack.md</code> separately to diagnose which reasoning layer
+is wrong. A model layer describes the decision contract; a module owns the code
+that implements one or more cohesive contracts.</p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li>Separate model layers from code modules</li>
+<li>Assign one responsibility to one owner</li>
+<li>Keep dependencies acyclic</li>
+<li>Define narrow contracts</li>
+<li>Isolate Episode-local state</li>
+<li>Decide when to split or merge</li>
+<li>Refactor without changing strategy</li>
+<li>Test module boundaries</li>
+<li>Migrate a monolithic Policy</li>
+<li>Review the resulting architecture</li>
+</ul>
+<h2 id="separate-model-layers-from-code-modules">Separate model layers from code modules</h2>
+<p>Do not require one file per model layer. That creates tiny pass-through modules
+and makes a single capability expensive to trace. Instead:</p>
+<ul>
+<li>use the layers to locate the earliest incorrect output;</li>
+<li>use modules to assign ownership of stable concepts;</li>
+<li>let one cohesive module implement adjacent contracts when they change
+  together;</li>
+<li>split a module when its responsibilities have different dependencies, reset
+  scopes, tests, or reasons to change.</li>
+</ul>
+<p>For example, <code>hands.py</code> may own exact hand classification from L1 and candidate
+enumeration used by L3. Do not put build-aware action ranking there merely
+because the final action is a hand play.</p>
+<h2 id="assign-one-responsibility-to-one-owner">Assign one responsibility to one owner</h2>
+<p>Use this as a responsibility map, not a mandatory file list:</p>
+<pre><code class="language-text">policy.py          ABI adapter and composition
+policy_system/
+  state.py         observation normalization and EpisodePlan lifecycle
+  actions.py       LegalCatalog, ActionGateway, and exact payload construction
+  hands.py         hand classification and legal card combinations
+  effects.py       visible effect semantics and resolution phases
+  scoring.py       play outcome estimates and calibration
+  draws.py         outs, draw distributions, and discard outcomes
+  build.py         role coverage, synergy, scaling, and replacement value
+  economy.py       reserves, interest, purchases, rerolls, packs, and skips
+  constraints.py   Boss and other public action/outcome constraints
+  consumables.py   target generation and deck-shape consequences
+  planning.py      horizon comparison and ActionValue
+  strategy.py      candidate orchestration and final intent ranking
+tests/
+  ...              pure, boundary, transition, and replay tests
+</code></pre>
+<p>Merge adjacent small owners when the Program is compact. For example, merge
+<code>build.py</code> and <code>economy.py</code> until each has substantial independent behavior.
+Split them once one can change without understanding the other. Preserve these
+ownership rules even when filenames differ:</p>
+<ul>
+<li><code>state</code> owns raw observation interpretation and reset scopes;</li>
+<li>mechanics modules own exact public game semantics;</li>
+<li>prediction modules own consequences, ranges, and confidence;</li>
+<li>planning owns cross-action value and horizon;</li>
+<li>strategy orchestrates existing owners but does not reimplement them;</li>
+<li>actions owns the final conversion from semantic intent to legal Action.</li>
+</ul>
+<p>One responsibility, one owner. Do not maintain parallel hand scorers, effect
+parsers, shop valuations, legal-action builders, or Joker role tables.</p>
+<h2 id="keep-dependencies-acyclic">Keep dependencies acyclic</h2>
+<p>Direct dependencies toward facts and pure models:</p>
+<pre><code class="language-text">policy -&gt; strategy
+strategy -&gt; planning + state + actions
+planning -&gt; scoring + draws + build + economy + constraints + consumables
+scoring/draws/build/economy/constraints/consumables -&gt; hands + effects + values
+hands/effects/values -&gt; normalized public domain values
+actions -&gt; LegalCatalog + intents + normalized identity
+state -&gt; normalized public domain values
+</code></pre>
+<p>Adapt the graph to the actual Program while enforcing:</p>
+<ul>
+<li>lower mechanics modules never import <code>strategy</code> or <code>policy</code>;</li>
+<li><code>state</code> never selects or emits an Action;</li>
+<li><code>actions</code> never decides whether buying, discarding, or playing is valuable;</li>
+<li><code>scoring</code> never parses a raw observation dictionary;</li>
+<li><code>effects</code> never imports build weights, economy thresholds, or strategy;</li>
+<li>sibling planners exchange explicit values through their caller instead of
+  importing each other in a cycle;</li>
+<li><code>policy.py</code> performs no domain computation.</li>
+</ul>
+<p>If two modules need each other, move the shared value or pure fact into a
+lower neutral owner. Do not hide cycles behind runtime imports, callbacks, a
+service locator, or an untyped <code>context</code> dictionary.</p>
+<h2 id="define-narrow-contracts">Define narrow contracts</h2>
+<p>Pass immutable, typed values where practical. Prefer:</p>
+<pre><code class="language-text">StateView + LegalCatalog + EpisodePlan
+  -&gt; tuple[IntentCandidate, ...]
+  -&gt; ActionValue per candidate
+  -&gt; ranked Intent
+  -&gt; admitted Action
+</code></pre>
+<p>Keep contracts smaller than the raw observation:</p>
+<ul>
+<li>pass the hand, visible cards, and modeled effects to scoring;</li>
+<li>pass cash, prices, reserve, slots, and build deltas to economy;</li>
+<li>pass public constraints to candidate filtering;</li>
+<li>pass stable public identity in a staged intent, never an ephemeral index.</li>
+</ul>
+<p>Do not leak raw dictionaries past the observation adapter. Do not return
+unchecked Action dictionaries from planners. Do not use a generic <code>utils.py</code>
+or <code>helpers.py</code> as an owner for domain behavior. Name a shared module after the
+concept it owns, such as <code>values.py</code>, <code>identity.py</code>, or <code>probability.py</code>.</p>
+<p>Document units and uncertainty at module seams. For example, distinguish an
+estimated in-game score range from expected Episode reward and distinguish
+exact mechanics from approximate effect coverage.</p>
+<h2 id="isolate-episode-local-state">Isolate Episode-local state</h2>
+<p>Prefer a small stateful shell around a pure decision core:</p>
+<ul>
+<li>keep Policy instance lifecycle and composition in <code>policy.py</code>;</li>
+<li>keep <code>EpisodePlan</code>, transition detection, and pending transaction state in
+  the state owner;</li>
+<li>keep mechanics, predictions, and value calculations pure;</li>
+<li>let strategy read and request state transitions through explicit methods;</li>
+<li>let the Action gateway resolve stable intent identities to current indices.</li>
+</ul>
+<p>Give every mutable field one writer and a documented reset boundary. Avoid
+module globals and cross-Episode caches. Cache pure derived facts only when
+their public identity is stable, and never cache observation indices across
+calls.</p>
+<h2 id="decide-when-to-split-or-merge">Decide when to split or merge</h2>
+<p>Split a responsibility when at least one of these holds:</p>
+<ul>
+<li>two callers need the same behavior and currently duplicate it;</li>
+<li>the behavior has an independent invariant or calibration test;</li>
+<li>its dependencies point lower than the rest of the current module;</li>
+<li>it has a distinct mutation or reset scope;</li>
+<li>changing it should not require understanding unrelated phases;</li>
+<li>a strategy branch is re-parsing, rescoring, or reconstructing Actions.</li>
+</ul>
+<p>Do not use line count alone as the split criterion. Keep code together when it
+shares one invariant, one change reason, and one dependency set.</p>
+<p>Merge or remove a module when it only forwards every argument, contains a
+single incidental helper, creates an import cycle, or gives a second name to
+an existing owner. Avoid one-class-per-file ceremony, abstract base classes
+with one implementation, plugin frameworks inside <code>program/</code>, and
+version-suffixed replacements such as <code>scoring_v2.py</code>.</p>
+<h2 id="refactor-without-changing-strategy">Refactor without changing strategy</h2>
+<p>Refactor and strategy change are separate experiments.</p>
+<ol>
+<li>Inventory existing owners, raw-field access, Action construction, mutable
+   state, duplicated constants, and import edges.</li>
+<li>Choose one leaf responsibility and define its input/output contract.</li>
+<li>Add characterization tests from authorized public fixtures before moving
+   code. Record control decisions, not only final Actions when useful.</li>
+<li>Extract the responsibility without changing thresholds, tie-breaking,
+   fallback order, numeric units, or state reset behavior.</li>
+<li>Route all callers to the new owner and delete the duplicate implementation.</li>
+<li>Run pure, boundary, transition, and sequential replay tests.</li>
+<li>Require identical intents and Actions on the refactor replay corpus. Treat
+   any difference as unexplained until classified.</li>
+<li>Use a small matched same-index control/refactor submission only when local
+   equivalence cannot cover runtime behavior. Expect score neutrality.</li>
+<li>Start a new digest and experiment for the subsequent strategic change.</li>
+</ol>
+<p>Do not claim a reward improvement from modularization. Its evidence is lower
+defect risk, observable contracts, action equivalence, and faster isolated
+experiments. If a refactor intentionally changes decisions, name the changed
+capability and evaluate it as a strategic experiment.</p>
+<h2 id="test-module-boundaries">Test module boundaries</h2>
+<p>Mirror the dependency graph in tests:</p>
+<ul>
+<li>test normalized values without strategy;</li>
+<li>test hand and effect mechanics with tables;</li>
+<li>test predictions with fixed model inputs and confidence;</li>
+<li>test value comparison with fixed outcome estimates;</li>
+<li>test state transitions as public observation sequences;</li>
+<li>test intents independently from Action translation;</li>
+<li>test the Action gateway against exact legal descriptors;</li>
+<li>test the composed strategy on persistent public replay fixtures.</li>
+</ul>
+<p>Add contract tests whenever multiple modules consume the same value. Assert
+deterministic ordering and tie-breaking explicitly. Keep fixtures minimal and
+authorized; never encode hidden Case or seed identity.</p>
+<p>For a refactor, compare at the earliest observable seam that moved and every
+downstream seam. Identical final Actions alone can conceal a corrupted
+prediction that happens to preserve current ranking.</p>
+<h2 id="migrate-a-monolithic-policy">Migrate a monolithic Policy</h2>
+<p>Extract stable leaves before the orchestrator:</p>
+<ol>
+<li>centralize observation normalization and legal descriptors;</li>
+<li>centralize exact Action construction and admission;</li>
+<li>extract hand classification and structured effect semantics;</li>
+<li>extract scoring and draw outcome prediction;</li>
+<li>isolate EpisodePlan state and transition resets;</li>
+<li>extract build, economy, consumable, and constraint models as evidence
+   justifies them;</li>
+<li>make planning compare shared <code>ActionValue</code> components;</li>
+<li>reduce strategy to candidate orchestration, ranking, and safe fallback;</li>
+<li>reduce <code>policy.py</code> to ABI construction and delegation.</li>
+</ol>
+<p>Keep the old path as a temporary characterized fallback only when the new
+module does not yet cover all public states. Give that fallback an explicit
+removal condition. Never keep two authoritative models indefinitely.</p>
+<h2 id="review-the-resulting-architecture">Review the resulting architecture</h2>
+<p>Before submission, verify:</p>
+<ul>
+<li>Can each behavior be named with one owning module?</li>
+<li>Does the import graph follow one direction without runtime-cycle tricks?</li>
+<li>Is raw public data normalized exactly once?</li>
+<li>Is every Action constructed and admitted in one gateway?</li>
+<li>Does every mutable field have one writer and reset scope?</li>
+<li>Do planners return semantic intents rather than payload dictionaries?</li>
+<li>Are mechanics, prediction, value, and selection separately testable?</li>
+<li>Are thresholds and units owned near the model that interprets them?</li>
+<li>Did the refactor preserve intent and Action behavior on replay?</li>
+<li>Is any remaining duplicate model temporary with a removal condition?</li>
+</ul>
+<p>Prefer the smallest architecture that satisfies these checks. Modularity is a
+means to improve experiment quality and Policy reliability, not an objective
+that competes with complete-run reward.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

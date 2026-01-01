@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Implementation playbook · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="implementation-playbook">Implementation playbook</h1>
+<p>Implement one capability through stable Policy-system seams. Favor code that
+can be tested without launching the environment and reverted without
+reconstructing unrelated behavior.</p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li>Trace before editing</li>
+<li>Localize the model layer</li>
+<li>Preserve module ownership</li>
+<li>Add a capability in layers</li>
+<li>Normalize observations</li>
+<li>Model Episode-local state</li>
+<li>Separate intents from Actions</li>
+<li>Implement multi-observation transactions</li>
+<li>Structure scoring and ordering</li>
+<li>Test the change</li>
+<li>Control scope and performance</li>
+<li>Review before submission</li>
+</ul>
+<h2 id="trace-before-editing">Trace before editing</h2>
+<p>For the target decision, trace:</p>
+<pre><code class="language-text">raw observation
+  -&gt; normalized StateView
+  -&gt; mechanics and EpisodePlan
+  -&gt; action outcome estimate
+  -&gt; action value and horizon comparison
+  -&gt; ranked intent
+  -&gt; ActionGateway
+  -&gt; exact Action
+</code></pre>
+<p>Identify the narrowest missing seam. Do not add a second raw-dictionary parser,
+shop tier list, scoring model, or Action constructor to bypass existing code.
+Run current unit tests and record the control digest before editing.</p>
+<h2 id="localize-the-model-layer">Localize the model layer</h2>
+<p>Use <code>modeling-stack.md</code> to find the earliest incorrect output. Inspect lower
+layers before changing an upper one:</p>
+<ul>
+<li>normalize missing or hidden data in L0;</li>
+<li>encode exact public semantics in L1;</li>
+<li>repair Episode-local abstraction and resets in L2;</li>
+<li>calibrate score, draw, shop, or reorder consequences in L3;</li>
+<li>change survival/growth/economy tradeoffs in L4;</li>
+<li>adjust priority, threshold, and fallback behavior in L5;</li>
+<li>repair exact Action translation in L6.</li>
+</ul>
+<p>Keep these outputs observable in pure tests. Never patch L5 weights to conceal
+an L1 or L3 defect.</p>
+<h2 id="preserve-module-ownership">Preserve module ownership</h2>
+<p>Use <code>modularity-guide.md</code> before extracting, splitting, merging, or rewiring
+Policy modules. Treat model layers and code modules as different views:
+layers locate an incorrect contract; modules assign ownership and dependency
+direction.</p>
+<ul>
+<li>Give raw normalization, mechanics, prediction, value, strategy, and Action
+  construction one authoritative owner each.</li>
+<li>Direct imports toward normalized facts and pure lower models. Never make a
+  mechanics module depend on strategy or let sibling planners form a cycle.</li>
+<li>Extract one leaf responsibility at a time and characterize its current
+  intent and Action behavior before moving it.</li>
+<li>Delete the superseded implementation after all callers use the new owner.</li>
+<li>Keep a modular refactor and a strategic behavior change in separate digests
+  and experiments.</li>
+</ul>
+<p>Do not introduce generic utility buckets, one-function pass-through modules,
+abstract frameworks with one implementation, or version-suffixed parallel
+models. Merge adjacent small modules when they share one invariant, dependency
+set, and reason to change.</p>
+<h2 id="add-a-capability-in-layers">Add a capability in layers</h2>
+<p>Use this patch order:</p>
+<ol>
+<li>Identify and freeze the affected layer contract.</li>
+<li>Add an invariant or table-driven test for its missing behavior.</li>
+<li>Add or extend the pure function in the lowest incorrect layer.</li>
+<li>Integrate the changed output through every dependent upper layer.</li>
+<li>Route the resulting intent through the existing Action gateway.</li>
+<li>Add state-transition tests if memory spans observations.</li>
+<li>Run a replay opportunity audit and inspect output/value/action changes.</li>
+<li>Run matched environment evidence only after local gates pass.</li>
+</ol>
+<p>Keep the pure function independent of Policy process I/O. Pass a small frozen
+context value instead of the whole raw observation when practical.</p>
+<h2 id="normalize-observations">Normalize observations</h2>
+<ul>
+<li>Centralize nullable mappings, finite numeric conversion, rule summaries,
+  structured parameters, card identity, and resource defaults.</li>
+<li>Preserve the distinction between absent, unknown, zero, and false. In
+  particular, two unknown ranks or suits are not equal.</li>
+<li>Treat observation indices as ephemeral. Resolve them again on every <code>act()</code>.</li>
+<li>Use stable public card keys only for intent identity; never store a temporary
+  list index as cross-observation identity.</li>
+<li>Represent unmodeled public effects explicitly with confidence or an unknown
+  role instead of inventing zero behavior.</li>
+</ul>
+<h2 id="model-episode-local-state">Model Episode-local state</h2>
+<p>Use a small <code>EpisodePlan</code> state machine. Give every field a documented reset
+scope:</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Reset boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>primary/secondary hand plan</td>
+<td>Episode or explicit strategy switch</td>
+</tr>
+<tr>
+<td>round discard counters</td>
+<td>new Blind/round</td>
+</tr>
+<tr>
+<td>rerolls in current shop</td>
+<td>new shop</td>
+</tr>
+<tr>
+<td>pending sell/purchase intent</td>
+<td>completion, illegality, or shop change</td>
+</tr>
+<tr>
+<td>observed score calibration</td>
+<td>Episode-local only if used by decisions</td>
+</tr>
+</tbody>
+</table>
+<p>Derive resets from public observation transitions. A new Policy instance must
+start every Episode; do not build cross-Episode learning into <code>act()</code>.</p>
+<h2 id="separate-intents-from-actions">Separate intents from Actions</h2>
+<p>Make planners return semantic intents such as:</p>
+<pre><code class="language-text">Play(cards)
+Discard(cards)
+Buy(stable_card_key)
+Sell(stable_owned_key)
+UseConsumable(stable_key, target_keys)
+Reorder(source_key, destination)
+</code></pre>
+<p>Translate an intent only after reading the current legal descriptor. The
+gateway must:</p>
+<ul>
+<li>emit exactly the allowed fields;</li>
+<li>check the action kind is currently present;</li>
+<li>check target and card-index membership;</li>
+<li>enforce uniqueness, ordering, and min/max cardinality;</li>
+<li>reject stale intent instead of repairing it silently;</li>
+<li>rank a different legal intent or use a safe legal fallback.</li>
+</ul>
+<p>Never pass descriptor metadata back as Action data.</p>
+<h2 id="implement-multi-observation-transactions">Implement multi-observation transactions</h2>
+<p>Selling to make room and then buying is not atomic:</p>
+<ol>
+<li>Choose replacement using current public values.</li>
+<li>Emit only the legal sell Action.</li>
+<li>Store a stable offered-card key and expected shop identity.</li>
+<li>On the next observation, verify the shop, offered card, price, money, slot,
+   and current <code>buy_card</code> target.</li>
+<li>Buy only if the original value condition still holds.</li>
+<li>Clear the intent on success, disappearance, illegality, phase change, or
+   conflicting higher-priority survival action.</li>
+</ol>
+<p>Test every cancellation branch. Apply the same pattern to other staged actions.</p>
+<h2 id="structure-scoring-and-ordering">Structure scoring and ordering</h2>
+<p>Keep scoring phases explicit:</p>
+<pre><code class="language-text">base hand
+  -&gt; scored-card effects and retriggers
+  -&gt; held-card effects
+  -&gt; main additive Chips/Mult
+  -&gt; main multiplicative Mult
+</code></pre>
+<p>Follow the public rule semantics when an effect belongs elsewhere. Return both
+an estimate and confidence when the model is incomplete.</p>
+<p>For Joker movement:</p>
+<ul>
+<li>construct dependencies from visible public rules;</li>
+<li>move only a proven inversion;</li>
+<li>prefer one adjacent legal move per observation;</li>
+<li>disable generic sorting when copy or trigger dependencies are unresolved;</li>
+<li>test the final resolution order, not only the list permutation.</li>
+</ul>
+<p>Whenever score calibration changes, rerun hand selection and discard tests.
+Numerical accuracy alone is not a Policy improvement.</p>
+<h2 id="test-the-change">Test the change</h2>
+<p>Maintain four test layers:</p>
+<ol>
+<li><strong>Pure mechanics</strong>: hand classification, effects, value, outs, ordering.</li>
+<li><strong>Action contract</strong>: exact shape and descriptor admission.</li>
+<li><strong>State transitions</strong>: round/shop/Episode reset and staged intents.</li>
+<li><strong>Public replay regression</strong>: sequential observations and changed decisions.</li>
+</ol>
+<p>Add small fixtures containing only authorized public fields needed by the
+invariant. Cover:</p>
+<ul>
+<li>hidden and debuffed cards;</li>
+<li>zero hands or discards;</li>
+<li>full slots and insufficient money;</li>
+<li>disappearing shop inventory;</li>
+<li>packs and targeted consumables;</li>
+<li>Boss restrictions;</li>
+<li>copy and ordering interactions;</li>
+<li>deterministic repeated calls with equivalent state and memory.</li>
+</ul>
+<p>Use actual <code>last_hand</code> evidence for calibration tests, but do not make replay
+fixtures depend on private seed or Case identity.</p>
+<h2 id="control-scope-and-performance">Control scope and performance</h2>
+<ul>
+<li>Change one decision capability per experiment.</li>
+<li>Prefer extending a shared role or phase model over a named-object exception.</li>
+<li>Keep constants close to the model they parameterize and document units.</li>
+<li>Avoid catch-all exception fallbacks that hide correctness defects.</li>
+<li>Enumerate the complete legal small hand space before adding search pruning.</li>
+<li>Cache only normalized or pure values whose public identity is stable; never
+  cache ephemeral indices across observations.</li>
+<li>Keep <code>act()</code> free of file, socket, subprocess, credential, and Host access.</li>
+<li>Use only dependencies already available to the submitted Program.</li>
+</ul>
+<p>Refactor first when the proposed change would duplicate normalization, action
+admission, scoring, or shop valuation. Prove intent and Action equivalence on
+replay. Treat the later capability change as a separate experiment before
+claiming strategic improvement.</p>
+<h2 id="review-before-submission">Review before submission</h2>
+<ul>
+<li>Does the patch affect only the stated capability?</li>
+<li>Is every new branch reachable in a public opportunity audit?</li>
+<li>Are unknown and hidden values handled conservatively?</li>
+<li>Can every emitted Action pass the current descriptor exactly?</li>
+<li>Does Episode-local state reset at the right boundary?</li>
+<li>Are transaction intents cleared on every invalidation path?</li>
+<li>Does the score model use the correct resolution phase?</li>
+<li>Are copy dependencies either modeled or explicitly excluded?</li>
+<li>Do tests cover the previous failure and the safe fallback?</li>
+<li>Can the patch be reverted exactly and the digest verified?</li>
+<li>Does every changed responsibility still have one owner and an acyclic import
+  path?</li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

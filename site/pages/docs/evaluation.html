@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Evaluation · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h2 id="basic-usage">Basic usage</h2>
+<pre><code class="language-python">from cartpole import CartPoleBenchmark
+from evopolicygym import EvaluationConfig, Program, evaluate
+from evopolicygym.execution import ProcessExecution
+
+result = evaluate(
+    Program.from_directory(&quot;my-policy/&quot;),
+    CartPoleBenchmark(),
+    execution=ProcessExecution.unsafe(),
+    config=EvaluationConfig(
+        split=&quot;validation&quot;,
+        episodes=100,
+        seed=42,
+        episode_timeout_seconds=30,
+    ),
+)
+
+print(result.feedback.score)
+</code></pre>
+<p><code>evaluate()</code> accepts one <code>Program</code>, one structural <code>Benchmark</code>, an explicit
+execution selection, and an optional <code>EvaluationConfig</code>.</p>
+<h2 id="evaluationconfig">EvaluationConfig</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>split</code></td>
+<td><code>"validation"</code></td>
+<td>Benchmark-defined Episode split.</td>
+</tr>
+<tr>
+<td><code>episodes</code></td>
+<td><code>1</code></td>
+<td>Positive number of Episodes.</td>
+</tr>
+<tr>
+<td><code>seed</code></td>
+<td><code>0</code></td>
+<td>Unsigned 64-bit seed for Episode planning.</td>
+</tr>
+<tr>
+<td><code>episode_timeout_seconds</code></td>
+<td><code>30.0</code></td>
+<td>Positive timeout for each Episode.</td>
+</tr>
+</tbody>
+</table>
+<p>The Benchmark must return exactly the requested number of Episodes. Planning
+must be deterministic for the same split, seed, and count.</p>
+<h2 id="evaluationresult">EvaluationResult</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>benchmark_id</code></td>
+<td>Public Benchmark identity.</td>
+</tr>
+<tr>
+<td><code>environment_digest</code></td>
+<td>Identity of the public Environment parameters.</td>
+</tr>
+<tr>
+<td><code>program_digest</code></td>
+<td>Identity of the evaluated Program.</td>
+</tr>
+<tr>
+<td><code>feedback</code></td>
+<td>Benchmark-defined score, public content, and artifacts.</td>
+</tr>
+<tr>
+<td><code>episodes</code></td>
+<td>Sanitized public Episode summaries.</td>
+</tr>
+</tbody>
+</table>
+<p>Episode summaries contain status, total reward, step count, and an optional
+Policy failure code. They do not contain scenarios, Environment seeds, Host
+paths, credentials, or private metrics.</p>
+<h2 id="episode-behavior">Episode behavior</h2>
+<p>Each Episode receives a fresh Environment, Policy process, Policy instance,
+and scratch directory. Policy state may persist only between <code>act()</code> calls in
+that Episode.</p>
+<p>Policy failures produce sanitized failed Episode summaries. Environment,
+Benchmark, execution, and cleanup faults abort the Evaluation.</p>
+<p><strong>Local process execution</strong></p>
+<p><code>ProcessExecution.unsafe()</code> is not a sandbox. The Policy runs with your
+operating-system user permissions.</p>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="programs.html">Programs</a></li>
+<li><a href="policy.html">Policy API</a></li>
+<li><a href="runs.html">Coding Agent Runs</a></li>
+<li><a href="runtime.html">Execution and safety</a></li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

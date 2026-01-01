@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Humanoid Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-humanoid-benchmark">EvoPolicyGym Humanoid Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Humanoid-v5</code>
+through EvoPolicyGym's public authoring SPI and official packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from humanoid import HumanoidBenchmark, HumanoidConfig, baseline_program
+
+benchmark = HumanoidBenchmark(
+    HumanoidConfig(
+        frame_skip=5,
+        forward_reward_weight=1.25,
+        ctrl_cost_weight=0.1,
+        contact_cost_weight=0.0000005,
+        contact_cost_range=(None, 10.0),
+        healthy_reward=5.0,
+        terminate_when_unhealthy=True,
+        healthy_z_range=(1.0, 2.0),
+        reset_noise_scale=0.01,
+        exclude_current_positions_from_observation=True,
+        include_cinert_in_observation=True,
+        include_cvel_in_observation=True,
+        include_qfrc_actuator_in_observation=True,
+        include_cfrc_ext_in_observation=True,
+    )
+)
+</code></pre>
+<p>All listed parameters are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. <code>None</code> is the public representation of an
+unbounded lower contact-cost clamp. Gymnasium's official <code>humanoid.xml</code> model
+is fixed. Custom XML paths and rendering/camera settings are Host-owned and
+never cross the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The default Policy observation contains 45 named torso and joint state floats
+plus four optional semantic objects: 130 body-inertia values, 78 center-of-mass
+velocity values, 17 actuator-force values, and 78 external-force values. These
+objects preserve all 348 default Gymnasium values while grouping them by body
+or joint. Each inclusion flag removes its corresponding object; disabling
+position exclusion adds root-qpos torso x/y. The scalar torso quaternion is in
+<code>w,x,y,z</code> order. The actuator-force object follows generalized-state order,
+whose first entries are <code>abdomen_z, abdomen_y, abdomen_x</code>; this intentionally
+differs from Action order.</p>
+<p>An Action is an exact 17-float list containing abdomen, hip, knee, shoulder,
+and elbow controls, each in <code>[-0.4, 0.4]</code>. Action order begins
+<code>abdomen_y, abdomen_z, abdomen_x</code>. Official actuator gears are published for
+every component: most abdomen/hip axes use <code>100</code>, hip-y uses <code>300</code>, knees use
+<code>200</code>, and all shoulder/elbow actuators use <code>25</code>. Integers, tuples, non-finite
+values, and out-of-range values are rejected rather than converted or clipped.</p>
+<p>Reward combines whole-body center-of-mass x velocity and the healthy reward,
+then subtracts squared-control and clamped external-contact costs. The
+<code>x_position</code>/<code>y_position</code> diagnostics are root qpos, while forward reward uses
+whole-body center-of-mass displacement; feedback labels this distinction. The
+model timestep is <code>0.003</code> seconds and default frame skip <code>5</code> makes each Policy
+step <code>0.015</code> simulated seconds. Health requires root torso z to be strictly
+inside the configured open interval; an unhealthy step receives no healthy
+reward. By default it terminates; otherwise the Episode truncates after 1000
+steps. The scalar Benchmark score is mean Episode return.</p>
+<p>Policy failure receives a configuration-scaled negative return. The packaged
+baseline applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return and steps; root x/y displacement and extrema;
+center-of-mass velocity, speed, and forward-step fraction; torso height,
+quaternion-derived tilt, health margins and health fraction; action use and
+gear-scaled controls; actuator, tendon, and external-force diagnostics when
+their source observations are enabled; full reward decomposition; explicit
+outcome counts; Policy failures; and bounded trace coverage. <code>trace.jsonl</code>
+retains at most four Episodes and at most 100 transitions per retained Episode.
+Long Episodes are sampled uniformly with the first and final transition
+included; shorter Episodes remain complete. Every retained transition contains
+complete nested observations, named Actions, current and cumulative
+diagnostics, and terminal reason. Episode rows and Feedback publish the real
+step count, sampling mode, retained transition count, and omitted transition
+count. Disabled optional observations stay unavailable in diagnostics rather
+than being leaked back to the Policy through feedback.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/humanoid
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

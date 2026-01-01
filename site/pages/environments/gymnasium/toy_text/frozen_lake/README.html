@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym FrozenLake Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-frozenlake-benchmark">EvoPolicyGym FrozenLake Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium FrozenLake
+through EvoPolicyGym's public authoring SPI. It is the first Gymnasium
+Benchmark in this repository whose environment is configured explicitly at
+Benchmark construction time.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from frozen_lake import (
+    FrozenLakeBenchmark,
+    FrozenLakeConfig,
+    baseline_program,
+)
+
+benchmark = FrozenLakeBenchmark(
+    FrozenLakeConfig(
+        map_name=&quot;8x8&quot;,
+        is_slippery=True,
+        success_rate=1.0 / 3.0,
+    )
+)
+</code></pre>
+<p><code>FrozenLakeConfig</code> accepts the upstream standard <code>4x4</code> and <code>8x8</code> maps, an
+<code>is_slippery</code> switch, and a finite <code>success_rate</code> in <code>[0.0, 1.0]</code>. The
+configuration is published through <code>BenchmarkSpec.environment_parameters</code> and
+contributes to <code>environment_digest</code>. Every Policy instance receives a detached
+copy in <code>PolicyContext.environment_parameters</code>.</p>
+<p>Environment parameters are Case-independent and remain constant across a
+Run. <code>EpisodeSpec</code> contains only the hidden, split-scoped environment seed;
+using <code>EpisodeSpec.scenario</code> for map or dynamics configuration is rejected.</p>
+<h2 id="contract">Contract</h2>
+<p>The Policy observation is semantic rather than a bare Gymnasium integer:</p>
+<pre><code class="language-json">{
+  &quot;state&quot;: 0,
+  &quot;row&quot;: 0,
+  &quot;column&quot;: 0,
+  &quot;tile&quot;: &quot;S&quot;
+}
+</code></pre>
+<p><code>state</code> is the row-major id <code>row * columns + column</code>; row zero is the top and
+column zero is the left. The full map, start, goal, hole coordinates, state
+encoding, and boundary behavior are public environment parameters.</p>
+<p>Actions are exact integers: <code>0</code> moves left, <code>1</code> down, <code>2</code> right, and <code>3</code> up.
+When the lake is slippery, the requested direction succeeds with
+<code>success_rate</code>; each adjacent direction receives half of the remaining
+probability. A move beyond the map edge stays in place.</p>
+<p>Reaching the goal returns <code>1</code> and terminates the Episode. Frozen tiles and
+holes return <code>0</code>; a hole terminates the Episode. The scalar Benchmark score is
+the fraction of Episodes that reach the goal. The standard 4×4 map has a
+100-step horizon and the standard 8×8 map has a 200-step horizon.</p>
+<p><code>baseline_program()</code> performs value iteration using only the map and dynamics
+published to the Policy. It does not receive private Case identity or hidden
+seeds.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports success rate, mean return, mean steps, hole, time-limit, and
+Policy-failure counts, plus bounded trace coverage. The public <code>trace.jsonl</code>
+artifact retains at most eight Episodes and includes semantic observations,
+named Actions, rewards, next observations, termination flags, and each sampled
+transition's requested direction, observed movement, sampled-branch
+probability, total probability of the observable outcome, possible sampled
+directions when boundaries make them ambiguous, step count, and terminal
+reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/toy_text/frozen_lake
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,14 @@
+"""Versioned Agent Session protocol constants and framing."""
+
+from ._framing import JsonFrameCodec
+
+SESSION_PROTOCOL = "agent-session/v3"
+SESSION_MAX_FRAME_BYTES = 64 * 1024
+SESSION_MAX_EPISODE_INDICES = 2_048
+
+SESSION_FRAMES = JsonFrameCodec(
+    label="Session",
+    max_bytes=SESSION_MAX_FRAME_BYTES,
+)
+
+__all__: list[str] = []

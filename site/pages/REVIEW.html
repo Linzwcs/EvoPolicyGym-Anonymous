@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Review artifact · EvoPolicyGym</title><link rel="stylesheet" href="../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="docs/index.html">Documentation</a><a href="../../index.html#environments">Environments</a><a href="REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="review-artifact">Review artifact</h1>
+<p>This snapshot provides the v0.3.0 kernel, independent Benchmark distributions,
+packaged baseline policies, example runners, tests, and local documentation.
+The Python package and command names in this artifact are <code>evopolicygym</code> and
+<code>evopolicygym-session</code>. Install the local source and its locked dependencies;
+do not install a similarly named package from a public package index.</p>
+<h2 id="reproduce-the-checks">Reproduce the checks</h2>
+<p>Use Python 3.12 and uv 0.11.16 from the repository root:</p>
+<pre><code class="language-console">uv sync --locked --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv run evopolicygym --version
+uv run evopolicygym-session --version
+uv build
+uv sync --project environments/gymnasium/classic_control/cartpole --locked --extra dev
+uv run --project environments/gymnasium/classic_control/cartpole python -m unittest discover -s environments/gymnasium/classic_control/cartpole/tests
+</code></pre>
+<p>The <a href="docs/getting-started.html">quickstart</a> evaluates a bundled baseline without
+an API key. Agent optimization additionally requires a supported coding-agent
+CLI and the reviewer's own credentials. <code>ProcessExecution.unsafe()</code> does not
+isolate untrusted code; run only trusted policies and agents.</p>
+<h2 id="reproducibility-scope">Reproducibility scope</h2>
+<p>The original package names, seed domains, content-digest domains, benchmark
+logic, and test fixtures are retained. Anonymization does not change their
+computational behavior. This is a current implementation snapshot, not the
+historical paper release; historical leaderboard results and unavailable run
+artifacts are not supplied here.</p>
+<h2 id="contents-and-attribution">Contents and attribution</h2>
+<p>Author contact details, publication identifiers, original project links,
+public-site assets, and previous Git history are omitted. Third-party
+licenses, upstream provenance, and required environment assets are retained.
+The initial commit uses an anonymous identity. The static website uses local
+assets and has no analytics, remote fonts, or third-party scripts.</p>
+<p>The site entry point is <a href="../../index.html">index.html</a>. It can be served with:</p>
+<pre><code class="language-console">python3 -m http.server 8000 --bind 127.0.0.1
+</code></pre>
+<p>The local <a href="docs/index.html">documentation</a> is also available independently of
+the website and the hosting service.</p>
+<p>To rebuild the website from the local documentation:</p>
+<pre><code class="language-console">uv run scripts/build_review_site.py
+</code></pre>
+<p>The script pins its Markdown renderer and generates the landing page and
+HTML documentation. Serve the repository root, with <code>index.html</code> as the
+website entry point. The project name is intentionally retained; the source
+and site remove direct author identification, not discoverability through
+deliberate searches for the public project name or code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

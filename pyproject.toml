@@ -1,0 +1,72 @@
+[project]
+name = "evopolicygym"
+version = "0.3.0"
+description = "A small benchmark kernel for coding-agent policy evolution."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+authors = [{ name = "Anonymous Authors" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.scripts]
+evopolicygym = "evopolicygym.cli:main"
+evopolicygym-session = "evopolicygym.run._session.cli:main"
+
+[build-system]
+requires = ["hatchling==1.31.0"]
+build-backend = "hatchling.build"
+
+[project.optional-dependencies]
+dev = [
+    "mypy==2.3.0",
+    "ruff>=0.12.0",
+]
+
+[tool.uv]
+required-version = "==0.11.16"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/evopolicygym"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/ARCHITECTURE.md",
+    "/CITATION.cff",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/LICENSE",
+    "/README.md",
+    "/SECURITY.md",
+    "/skills",
+    "/pyproject.toml",
+    "/src",
+    "/tests",
+]
+exclude = [
+    "**/__pycache__",
+    "**/*.pyc",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+show_error_codes = true
+warn_unused_configs = true
+files = ["src", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

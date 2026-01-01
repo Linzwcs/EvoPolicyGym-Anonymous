@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Crafter Long-Horizon Survival Score (LHS) · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="crafter-long-horizon-survival-score-lhs">Crafter Long-Horizon Survival Score (LHS)</h1>
+<p>LHS is the default reward metric in the Crafter Benchmark distribution. Its
+launcher name is <code>lhs</code>, its Benchmark class is
+<code>CrafterLongHorizonSurvivalBenchmark</code>, and its primary Feedback field is
+<code>long_horizon_survival_score</code>.</p>
+<p>The metric distinguishes robust, healthy survival from short
+achievement-rich trajectories while retaining bounded incentives for
+development and maintenance. Native Crafter achievement scoring remains
+available separately through the <code>canonical</code> profile.</p>
+<h2 id="transition-reward">Transition reward</h2>
+<p>After Crafter applies Action <code>t</code>:</p>
+<pre><code class="language-text">alive_t = 1 unless t is the natural terminal transition, else 0
+q_t = min(health_t, food_t, drink_t) / 9
+
+alive_survival_t = 0.01 * alive_t
+vital_survival_t = 0.03 * alive_t * q_t
+
+Step.reward_t =
+    alive_survival_t
+    + vital_survival_t
+    + first_unlock_delta_t
+    + maintenance_repeat_delta_t
+    + productivity_repeat_delta_t
+</code></pre>
+<p>At full visible vitals, one alive transition is worth <code>0.04</code>, 25 transitions
+are worth one point, and a fully healthy 300-step day is worth 12 survival
+points. The explicit alive component preserves a recovery incentive when one
+necessity reaches zero. Energy and native Crafter reward are public diagnostics
+and are not scored by LHS.</p>
+<p>The named survival parameters are:</p>
+<pre><code class="language-text">LHS_ALIVE_ALPHA = 0.01
+LHS_VITAL_ALPHA = 0.03
+LHS_HEALTHY_WINDOW_STEPS = 300
+</code></pre>
+<h2 id="development-and-maintenance">Development and maintenance</h2>
+<p>First unlocks use compressed technology-stage weights:</p>
+<pre><code class="language-text">first_unlock_credit(name) = 0.10 * log2(1 + raw_weight(name))
+</code></pre>
+<p>Productive repeats use a rolling 300-step window. Within one window, an event
+can receive at most 20% of its own first-unlock credit, distributed across its
+event-specific quota. The credited events are wood, saplings, stone, coal,
+iron, diamond, zombies, skeletons, and planted crops.</p>
+<p>Maintenance repeats have a total rolling-window allowance of 1.2 points,
+split equally between drink and food. Credit is limited by the restoration
+that was possible from the pre-Action value and by rolling restoration-unit
+caps. Drinking and eating while already full therefore do not receive
+maintenance credit.</p>
+<p>An achievement's first successful event receives first-unlock credit only; it
+does not also receive repeat credit.</p>
+<h2 id="episode-return-and-policy-failure">Episode return and Policy failure</h2>
+<p>A completed Episode return is the exact sum of public transition rewards:</p>
+<pre><code class="language-text">survival_return_i = sum(alive_survival + vital_survival)
+
+secondary_return_i = sum(
+    first_unlock
+    + maintenance_repeat
+    + productivity_repeat
+)
+
+episode_return_i = survival_return_i + secondary_return_i
+</code></pre>
+<p>A Policy execution failure has formal Episode return, survival return, and
+secondary return zero. Its partial trajectory and partial component totals
+remain visible and are explicitly marked as discarded.</p>
+<h2 id="cross-episode-feedback">Cross-Episode Feedback</h2>
+<p>For <code>N</code> Episodes, let <code>k = max(1, ceil(0.25 * N))</code>. Episodes are sorted only by
+<code>survival_return_i</code> when selecting the weak tail:</p>
+<pre><code class="language-text">LHS =
+    0.75 * mean(survival_return)
+    + 0.25 * mean(bottom-k survival returns)
+    + mean(secondary_return)
+</code></pre>
+<p>There is no upper-tail bonus. Secondary return uses an ordinary mean and
+cannot move a short, achievement-rich Episode out of the survival lower tail.
+The named component contributions in Feedback exactly reconstruct the scalar
+score.</p>
+<h2 id="public-diagnostics">Public diagnostics</h2>
+<p>LHS Feedback publishes:</p>
+<ul>
+<li>mean, median, P10, P25, P90, minimum, and maximum effective survival;</li>
+<li>survival rates at 150, 200, 250, 300, and 400 steps;</li>
+<li>weakest-vital quality overall and by Episode-age bands;</li>
+<li>terminal food/drink status and health-change diagnostics;</li>
+<li>native Crafter return and canonical Crafter achievement score;</li>
+<li>first-unlock, maintenance, productivity, action, and Policy-failure details.</li>
+</ul>
+<p>Every detailed training trajectory records the five LHS components, native
+reward, health/food/drink values, and cadence diagnostics. Validation and test
+publish aggregate Feedback only.</p>
+<h2 id="public-identity">Public identity</h2>
+<pre><code class="language-text">RGB Benchmark ID:
+crafter/CrafterReward-v1/long-horizon-survival-score-v1
+
+Local-symbolic Benchmark ID:
+crafter/CrafterReward-v1/local-symbolic-v1/long-horizon-survival-score-v1
+
+reward_profile: lhs
+primary_metric: long_horizon_survival_score
+</code></pre></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

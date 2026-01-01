@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid GoToObject Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-gotoobject-benchmark">MiniGrid GoToObject Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/GoToObjectEnv/">MiniGrid GoToObject</a>
+instruction-following task.</p>
+<p>The Policy receives the upstream <code>7 × 7 × 3</code> egocentric symbolic image,
+compass direction, and a natural-language mission identifying a colored key,
+ball, or box. It must explore the room, stand next to the requested object, and
+issue <code>done</code>; an incorrect completion ends the Episode with zero reward.
+Executing <code>toggle</code> also terminates immediately with zero reward; it is not a
+completion alias.</p>
+<h2 id="install-and-test">Install and test</h2>
+<p>From the EvoPolicyGym repository root:</p>
+<pre><code class="language-console">uv sync --project environments/minigrid/minigrid/go_to_object --extra dev
+uv run --project environments/minigrid/minigrid/go_to_object \
+  python -m unittest discover \
+  -s environments/minigrid/minigrid/go_to_object/tests
+uv build environments/minigrid/minigrid/go_to_object
+</code></pre>
+<h2 id="public-api">Public API</h2>
+<pre><code class="language-python">from minigrid_go_to_object import GoToObjectBenchmark, GoToObjectConfig, baseline_program
+
+benchmark = GoToObjectBenchmark(
+    GoToObjectConfig(profile=&quot;8x8-N2&quot;),
+)
+program = baseline_program()
+</code></pre>
+<p>Available profiles are <code>6x6-N2</code> and <code>8x8-N2</code>. A profile is selected
+by the Benchmark Host before a Run, is included in the environment digest, and
+cannot be selected or changed by the Policy.</p>
+<p>The spec defines image axes and channels, view orientation, compass and
+symbolic encodings, exact reward, and both <code>toggle</code> and <code>done</code> termination
+rules. Feedback reports target discovery and first-seen step, visible and
+historically discovered candidate counts, whether the target is visibly
+adjacent, the visible adjacent object before completion, remaining horizon,
+observation novelty, ineffective Actions, and per-Action usage. Incorrect
+completion is separated into premature <code>toggle</code> and <code>done</code> from a wrong
+location. <code>trace.jsonl</code> contains a bounded semantic trace for at most four
+Episodes, retaining the first 128 and last 32 transitions of long Episodes. It
+contains no Episode seed, private Case identity, or Host path.</p>
+<p>The packaged baseline builds a relative map from public egocentric
+observations, parses the public mission, and shortest-path plans to the matching
+object. It consumes no private environment state.</p>
+<p>Tests that use <code>ProcessExecution.unsafe()</code> run trusted packaged code only.
+That backend is a local process mechanism, not a sandbox and not suitable for
+hostile Programs.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

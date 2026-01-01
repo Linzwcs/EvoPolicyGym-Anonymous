@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Hopper Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-hopper-benchmark">EvoPolicyGym Hopper Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Hopper-v5</code>
+through EvoPolicyGym's public authoring SPI and official packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from hopper import HopperBenchmark, HopperConfig, baseline_program
+
+benchmark = HopperBenchmark(
+    HopperConfig(
+        frame_skip=4,
+        forward_reward_weight=1.0,
+        ctrl_cost_weight=0.001,
+        healthy_reward=1.0,
+        terminate_when_unhealthy=True,
+        healthy_state_range=(-100.0, 100.0),
+        healthy_z_range=(0.7, None),
+        healthy_angle_range=(-0.2, 0.2),
+        reset_noise_scale=0.005,
+        exclude_current_positions_from_observation=True,
+    )
+)
+</code></pre>
+<p>All listed parameters are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. <code>None</code> is the public representation of an
+unbounded upper z limit. Gymnasium's official <code>hopper.xml</code> model is fixed.
+Custom XML paths and rendering/camera settings are Host-owned and never cross
+the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The default Policy observation contains eleven named <code>float64</code> values: torso
+height and pitch, three joint angles, torso x/z velocity, and four angular
+velocities. Gymnasium clips all six velocity values to <code>[-10, 10]</code>; health is
+computed from the corresponding un-clipped MuJoCo state. The explicit field
+names are <code>torso_z_position</code>, <code>torso_pitch_angle</code>, <code>thigh_angle</code>, <code>leg_angle</code>,
+<code>foot_angle</code>, <code>torso_x_velocity</code>, <code>torso_z_velocity</code>,
+<code>torso_pitch_angular_velocity</code>, and the three joint angular velocities.
+With <code>exclude_current_positions_from_observation=False</code>,
+<code>torso_x_position</code> is prepended.</p>
+<p>An Action is an exact three-float list in thigh, leg, then foot order, each in
+<code>[-1.0, 1.0]</code>. All three official XML actuators have gear <code>200</code>; feedback
+publishes both requested controls and their gear-scaled values. Integers,
+tuples, non-finite values, and out-of-range values are rejected rather than
+converted or clipped.</p>
+<p>Reward combines weighted forward x velocity and the healthy reward, then
+subtracts weighted squared control magnitude. The model timestep is <code>0.002</code>
+seconds; default frame skip <code>4</code> makes each Policy step <code>0.008</code> simulated
+seconds. Contrary to the prose in Gymnasium's generated documentation, its
+implementation applies strict open bounds for health: the un-clipped state,
+torso height, and torso pitch must each be strictly inside their configured
+ranges. Healthy reward is zero on an unhealthy step. By default, an unhealthy
+Hopper terminates; otherwise the Episode truncates after 1000 steps. The scalar
+Benchmark score is mean Episode return. Gymnasium's published solution
+threshold is <code>3800</code>.</p>
+<p>Policy failure receives a configuration-scaled return no greater than <code>-1000</code>.
+The packaged baseline applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return, steps, initial/final/net x motion, velocity and
+forward-step statistics, torso-height and pitch stability, health fractions
+and margins, action use, reward decomposition, explicit outcome counts, Policy
+failures, and bounded trace coverage. <code>trace.jsonl</code> retains at most four
+Episodes with complete Policy observations, exact named Actions, requested and
+gear-scaled controls, current and cumulative kinematics/health/reward metrics,
+failed health conditions, and terminal reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/hopper
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Reacher Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-reacher-benchmark">EvoPolicyGym Reacher Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Reacher-v5</code>
+through EvoPolicyGym's public authoring SPI and official packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from reacher import ReacherBenchmark, ReacherConfig, baseline_program
+
+benchmark = ReacherBenchmark(
+    ReacherConfig(
+        frame_skip=2,
+        reward_dist_weight=1.0,
+        reward_control_weight=1.0,
+    )
+)
+</code></pre>
+<p>Simulation cadence, actuator gears, target sampling, arm geometry, and reward weights are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. Gymnasium's official <code>reacher.xml</code> model is
+fixed. Custom XML paths and rendering/camera settings are Host-owned and never
+cross the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The Policy receives ten named <code>float64</code>-derived values:</p>
+<ul>
+<li>sine and cosine of the shoulder angle and the elbow angle relative to the
+  first link;</li>
+<li>target x/y position;</li>
+<li>angular velocity of both joints;</li>
+<li>fingertip-minus-target x/y displacement.</li>
+</ul>
+<p>An Action is an exact two-float list containing shoulder and elbow actuator
+controls, each in <code>[-1.0, 1.0]</code>. Both official actuators apply gear <code>200</code>, so
+these values are not direct torques in newton-meters. Feedback reports both
+requested controls and gear-scaled generalized torques. Integers, tuples,
+non-finite values, and out-of-range values are rejected rather than converted
+or clipped.</p>
+<p>The target is sampled uniformly in x/y from <code>[-0.2, 0.2]</code> and rejected unless
+its radius is below <code>0.2</code> meters. The model timestep is <code>0.01</code> seconds; default
+<code>frame_skip=2</code> advances <code>0.02</code> simulated seconds per Policy step. Reacher never
+terminates naturally and truncates after 50 steps. Each reward is the negative
+weighted fingertip distance minus the weighted squared action norm. The scalar
+Benchmark score is mean Episode return; Gymnasium's published solution
+threshold is <code>-3.75</code>.</p>
+<p>Policy failure receives a <code>-1000</code> return. The packaged baseline applies zero
+torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports initial, final, best, and worst fingertip-target distance;
+final distance reduction; the closest-approach step; angular-velocity extrema;
+action effort; cumulative distance and control rewards; outcome counts; Policy
+failures; and bounded trace coverage.</p>
+<p><code>trace.jsonl</code> retains at most eight Episodes with complete observations, exact
+named controls, gear-scaled torques, reconstructed joint angles and fingertip
+coordinates, unit-circle consistency, current and running distances, timing,
+reward decomposition, cumulative return, and explicit terminal reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/reacher
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Runtime · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h2 id="explicit-unsafe-selection">Explicit unsafe selection</h2>
+<p>Local evaluation requires an explicit acknowledgement:</p>
+<pre><code class="language-python">from evopolicygym.execution import ProcessExecution
+
+execution = ProcessExecution.unsafe()
+</code></pre>
+<p>This selects local process execution. It does not activate a sandbox, remove
+permissions, or make untrusted code safe.</p>
+<h2 id="lifecycle-guarantees">Lifecycle guarantees</h2>
+<p>For every Episode, the evaluator:</p>
+<ol>
+<li>creates a fresh Benchmark-owned Environment;</li>
+<li>materializes the immutable Program into fresh scratch;</li>
+<li>starts a fresh Python Policy process;</li>
+<li>calls <code>make_policy(context)</code> once;</li>
+<li>preserves that instance across the Episode's <code>act()</code> calls;</li>
+<li>validates and applies complete, unmodified Actions;</li>
+<li>closes the Environment and reaps the Policy process on every exit path.</li>
+</ol>
+<p>Policy state and scratch never intentionally cross Episode boundaries.</p>
+<h2 id="isolation-limits">Isolation limits</h2>
+<p><code>ProcessExecution</code> does not provide:</p>
+<ul>
+<li>kernel, namespace, seccomp, cgroup, container, or microVM isolation;</li>
+<li>CPU, memory, PID, descriptor, disk, or network confinement;</li>
+<li>protection for Host files, credentials, processes, or system time;</li>
+<li>adversarial execution of third-party Agent or Policy code;</li>
+<li>bit-for-bit determinism for arbitrary Python Programs.</li>
+</ul>
+<p>The Agent process is also local and unisolated. Codex, Claude Code, Kimi Code,
+and custom command integrations have the authority of the current
+operating-system user.</p>
+<h2 id="failure-domains">Failure domains</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Policy exception, timeout, invalid Action, or protocol error</td>
+<td>Sanitized <code>policy_failed</code> Episode; Evaluation may continue with its plan.</td>
+</tr>
+<tr>
+<td>Environment reset, step, scoring, or cleanup fault</td>
+<td>Abort Evaluation; never become a Policy penalty.</td>
+</tr>
+<tr>
+<td>Process preparation, control, framing, or cleanup fault</td>
+<td>Abort Evaluation as an execution fault.</td>
+</tr>
+<tr>
+<td>Run publication or projection fault</td>
+<td>Close the Run; never forge committed Feedback.</td>
+</tr>
+</tbody>
+</table>
+<p>Complete malformed guest frames, partial frames, and trusted-input errors keep
+distinct internal classifications even when public Policy feedback remains
+sanitized.</p>
+<h2 id="optional-native-products">Optional native products</h2>
+<p>The separately built <code>native/bootstrap</code> distribution contains formal-manager
+ownership primitives. Its presence alone does not make a formal profile
+available.</p>
+<p>The separately installable <code>policy-backend-firecracker</code> package is alpha
+groundwork. Installing or building it does not provide a sandbox, production
+backend, or qualified formal execution profile.</p>
+<p>No requested virtualization setting may silently fall back to
+<code>ProcessExecution</code>.</p>
+<h2 id="operational-guidance">Operational guidance</h2>
+<p>Use local process execution only when:</p>
+<ul>
+<li>the Agent, Program, and Benchmark are trusted;</li>
+<li>the caller accepts Host-level authority;</li>
+<li>retained Run files contain no credentials;</li>
+<li>evaluation is for development or conformance, not adversarial admission.</li>
+</ul>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="evaluation.html">Evaluation →</a></li>
+<li><a href="runs.html">Coding Agent Runs →</a></li>
+<li><a href="authoring.html">Benchmark authoring →</a></li>
+<li><a href="concepts.html">Core concepts →</a></li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

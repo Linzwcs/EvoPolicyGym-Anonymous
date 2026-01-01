@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Gymnasium collection · EvoPolicyGym</title><link rel="stylesheet" href="../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../docs/index.html">Documentation</a><a href="../../../../index.html#environments">Environments</a><a href="../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="gymnasium-collection">Gymnasium collection</h1>
+<p>This collection contains independently distributed EvoPolicyGym Benchmarks
+backed by Gymnasium environments. Subdirectories follow Gymnasium's upstream
+suite organization. Together they cover all 23 current tasks in Gymnasium's
+four documented built-in suites.</p>
+<table>
+<thead>
+<tr>
+<th>Suite</th>
+<th>Status</th>
+<th>Distributions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="box2d/README.html">Box2D</a></td>
+<td>Implemented</td>
+<td>LunarLander, BipedalWalker, CarRacing</td>
+</tr>
+<tr>
+<td><a href="classic_control/README.html">Classic Control</a></td>
+<td>Implemented</td>
+<td>CartPole, Acrobot, Mountain Car, Continuous Mountain Car, Pendulum</td>
+</tr>
+<tr>
+<td><a href="mujoco/README.html">MuJoCo</a></td>
+<td>Implemented</td>
+<td>All eleven current <code>v5</code> tasks</td>
+</tr>
+<tr>
+<td><a href="toy_text/README.html">Toy Text</a></td>
+<td>Implemented</td>
+<td>Blackjack, CliffWalking, FrozenLake, Taxi</td>
+</tr>
+</tbody>
+</table>
+<p>The collection itself is not installable. Select a leaf distribution and use
+its own <code>pyproject.toml</code> and <code>uv.lock</code>. Alternate registrations for the same
+task are configuration modes rather than duplicate distributions:
+<code>FrozenLake8x8-v1</code>, <code>CliffWalkingSlippery-v1</code>,
+<code>LunarLanderContinuous-v3</code>, and <code>BipedalWalkerHardcore-v3</code> are covered by the
+corresponding typed Benchmark configuration. Deprecated versions, compatibility
+shims, and Gymnasium's experimental <code>phys2d/</code> and <code>tabular/</code> implementations
+are not separate Benchmarks.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

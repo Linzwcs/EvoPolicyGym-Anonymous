@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Programs · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h2 id="directory-layout">Directory layout</h2>
+<p>A Program directory must contain <code>policy.py</code>:</p>
+<pre><code class="language-text">my-policy/
+├── policy.py
+└── model.json
+</code></pre>
+<p><code>policy.py</code> must define <code>make_policy(context)</code>. Other files are optional and
+may be imported or read by the Policy.</p>
+<h2 id="create-a-program">Create a Program</h2>
+<pre><code class="language-python">from evopolicygym import Program
+
+program = Program.from_directory(&quot;my-policy/&quot;)
+
+print(program.digest)
+print(program.files)
+</code></pre>
+<p><code>from_directory()</code> reads a stable snapshot. Later changes to <code>my-policy/</code> do
+not change <code>program</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>digest</code></td>
+<td>SHA-256 content identity, including the fixed entry point and Policy ABI version.</td>
+</tr>
+<tr>
+<td><code>entrypoint</code></td>
+<td><code>policy.py:make_policy</code></td>
+</tr>
+<tr>
+<td><code>policy_abi</code></td>
+<td>Policy ABI version required by the snapshot.</td>
+</tr>
+<tr>
+<td><code>files</code></td>
+<td>Relative file paths in deterministic order.</td>
+</tr>
+<tr>
+<td><code>file_count</code></td>
+<td>Number of files in the snapshot.</td>
+</tr>
+<tr>
+<td><code>total_bytes</code></td>
+<td>Total uncompressed file size.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="snapshot-limits">Snapshot limits</h2>
+<p>Default limits are 1,000 files, 64 MiB total, and 16 MiB per file. Override
+them with <code>ProgramLimits</code>:</p>
+<pre><code class="language-python">from evopolicygym import Program
+from evopolicygym.program import ProgramLimits
+
+program = Program.from_directory(
+    &quot;my-policy/&quot;,
+    limits=ProgramLimits(
+        max_files=100,
+        max_total_bytes=8 * 1024 * 1024,
+        max_file_bytes=2 * 1024 * 1024,
+    ),
+)
+</code></pre>
+<p>The source must be a real directory. Symbolic links are rejected. <code>.git</code> and
+<code>__pycache__</code> directories are ignored.</p>
+<h2 id="read-or-materialize-a-snapshot">Read or materialize a snapshot</h2>
+<pre><code class="language-python">source = program.read_bytes(&quot;policy.py&quot;)
+program.write_to(&quot;saved-policy&quot;)
+</code></pre>
+<p><code>write_to()</code> requires a destination that does not already exist.</p>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="policy.html">Write the Policy entry point</a></li>
+<li><a href="evaluation.html">Evaluate the Program</a></li>
+<li><a href="runs.html">Use Programs in a Run</a></li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

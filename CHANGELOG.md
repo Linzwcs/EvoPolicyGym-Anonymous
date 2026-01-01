@@ -1,0 +1,79 @@
+# Changelog
+
+## Unreleased
+
+- Changed Balatro to `run-score-v3`: one point per Blind actually cleared,
+  doubled on a win (24 cleared Blinds score 48), with Policy failures still
+  scoring zero. Public rules and evidence tools use the new scoring contract.
+- Added a first-party Qoder CLI integration with explicit model selection,
+  optional reasoning effort, headless stream output, retained identity, and
+  caller-controlled authentication and configuration environment variables.
+- Added Crafter and Linux-targeted NLE NetHack Benchmark distributions,
+  complete reversible training trajectories, and the NLE held-out experiment
+  reference page.
+- Added Benchmark-declared permanent/bulk Artifact retention, synchronized
+  oldest-first eviction in Host and Agent views, complete-newest protection,
+  Agent-owned `workspace/analysis/`, and `run-record/v7`.
+- Retained Benchmark-defined aggregate Feedback content in Host-only
+  Validation and Assessment reports without exposing Artifacts to the Agent.
+- Renamed the reusable general-purpose Agent Skill from `use-evopolicygym` to
+  `evopolicygym`, refocused it on caller-side Host and public SDK workflows,
+  and split its setup, Evaluation, Run, provider, authoring, and diagnostic
+  guidance for progressive loading.
+- Expanded CI to test and build all 59 first-party Benchmark distributions,
+  including the Gymnasium Classic Control, Toy Text, Box2D, and MuJoCo suites
+  plus Balatro, and added a repository test that rejects unlisted Environment
+  projects.
+- Split the Host/operator `evopolicygym` executable from the Agent-facing
+  `evopolicygym-session submit|finish` client without changing the
+  `agent-session/v3` wire protocol.
+- Added a deterministic, Host-owned indexed training Episode pool. Agents now
+  select arbitrary singleton and half-open range unions through
+  `agent-session/v3`; repeated indices preserve Episode and Policy seeds across
+  Submissions while every use still creates fresh runtimes and consumes
+  budget.
+- Added `RunConfig.episode_pool_size`, indexed `SubmissionResult` and Feedback
+  records, `evopolicygym/feedback/v2`, and `evopolicygym/run-record/v6`.
+- Added first-class public Environment parameters to `BenchmarkSpec`, the
+  `policy/v2` `PolicyContext`, Coding Agent tasks, Evaluation identity, and
+  `run-record/v4`.
+- Added a canonical Environment-parameter digest so direct Evaluations,
+  Submissions, Validation, Assessment, and retained Runs cannot silently mix
+  different configured tasks under one Benchmark ID.
+- Added optional held-out final-Program Assessment with an independent seed
+  domain, aggregate results, progress events, and run-record schema v3.
+- Added `AssessmentConfig`, `AssessmentResult`, and the `assessment_failed`
+  terminal reason without candidate fallback.
+- Added atomic ordered candidate handoff through `agent-session/v2` and
+  optional post-Agent server-side Validation with aggregate retained results.
+- Added `ValidationConfig`, candidate and Validation fields on `RunResult`,
+  the `validation_failed` terminal reason, and run-record schema v2.
+- Added persisted Episode progress events, the public `RunObserver` contract,
+  and a standard-library `ConsoleProgress` reporter.
+- Made the per-Submission Episode cap optional; it now defaults to `None` so
+  the Coding Agent can allocate the finite Run budget itself.
+- Added explicit, immutable, content-addressed `AgentSkill` directory
+  snapshots. Runs may compose multiple Skills under read-only
+  `workspace/skills/`, and `run-record/v5` retains their names and digests
+  without coupling them to `BenchmarkSpec` or Policy processes.
+- Added required Codex `reasoning_effort` selection, deterministic CLI
+  translation, and retention in the Agent identity.
+
+## 0.3.0
+
+- Replaced the superseded implementation with a small clean-slate Kernel.
+- Added immutable Program snapshots and direct per-Episode Policy processes.
+- Added bounded Program-Evolution Runs with Agent submissions and final
+  selection.
+- Added Benchmark-defined Feedback content and public Artifact publication.
+- Added the first-party Codex integration for explicitly unsafe local process
+  execution.
+- Made `evaluation`, `run`, and `execution` cohesive public feature packages;
+  removed their parallel private shadow packages and the global composition
+  root.
+- Added a provider-neutral `CodingAgent` task/invocation template and made
+  Codex its first implementation.
+- Organized independently installable Benchmark distributions under
+  `environments/` and marked the Kernel package as typed for external authors.
+- Removed the superseded 0.2 implementation and its experimental products from
+  the active repository.

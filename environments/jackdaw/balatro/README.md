@@ -1,0 +1,199 @@
+# EvoPolicyGym Balatro Benchmark
+
+This directory contains an unofficial, independently installable Balatro
+Benchmark for EvoPolicyGym. It uses Jackdaw as the trusted headless rules
+engine and exposes a semantic `PolicyValue` interface intended for Programs
+written by coding agents.
+
+The first profile is deliberately narrow:
+
+- Red Deck (`b_red`);
+- White Stake (`stake=1`);
+- one complete run per Episode;
+- deterministic, split-scoped hidden seeds;
+- one point per Blind actually cleared, with the total doubled on a win;
+- zero score for a Policy failure.
+
+For `N` Blinds actually cleared, an unwon Episode scores `N` and a won Episode
+scores `2N`. Clearing all 24 Blinds and winning scores 48. Skipped Blinds do
+not count toward `N`. Each Blind clear gives +1 transition reward; clearing
+the winning Boss also adds a one-time bonus of `N`, so the transition rewards
+sum to `2N`. The following cash-out does not award the win bonus again.
+
+The profile is selected through a typed Benchmark constructor:
+
+```python
+from balatro import BalatroBenchmark, BalatroConfig
+
+benchmark = BalatroBenchmark(
+    BalatroConfig(deck="b_red", stake=1)
+)
+```
+
+The current distribution accepts only this tested profile. Its deck, stake,
+content profile, and engine revision are published through
+`BenchmarkSpec.environment_parameters`, contribute to `environment_digest`,
+and are delivered to every Policy in
+`PolicyContext.environment_parameters`. They are no longer duplicated in
+`EpisodeSpec.scenario`; Episodes contain only split-scoped hidden seeds.
+
+The `jackdaw-active-content-v1` environment parameter excludes objects whose
+effects are inactive in the pinned engine. Exclusion happens while
+constructing the RNG-backed pool, before selection:
+
+- Tags: `tag_rare`, `tag_uncommon`, and `tag_voucher`;
+- Vouchers: `v_omen_globe`, `v_telescope`, `v_observatory`,
+  `v_directors_cut`, and `v_retcon`.
+
+The partially implemented `v_illusion` remains available with a tooltip that
+describes only its active behavior. Working prerequisites such as Crystal Ball
+and Magic Trick also remain available. The exact exclusions are machine-readable
+in `BenchmarkSpec.metadata.excluded_content`. These restrictions were introduced
+in `run-score-v2` and change seed-to-content trajectories relative to
+`run-score-v1`. The current `run-score-v3` Benchmark ID retains those restrictions
+and replaces the former fixed 1000-point win bonus with a doubling of cleared
+Blinds. Its scores are not directly comparable with either earlier version.
+
+Jackdaw is maintained as vendored source under `vendor/jackdaw/`. Its base is
+commit `c84dca9227b40eb5f7ff9fd7cd78945aa07854ce`, the immutable head of
+upstream [PR #1](https://github.com/TylerFlar/jackdaw-balatro/pull/1). On top
+of that base, this copy absorbs the reviewed gameplay and RNG fixes from
+upstream [PR #2](https://github.com/TylerFlar/jackdaw-balatro/pull/2),
+[PR #5](https://github.com/TylerFlar/jackdaw-balatro/pull/5), and
+[PR #6](https://github.com/TylerFlar/jackdaw-balatro/pull/6). The exact commit
+stack and known remaining limitations are recorded in
+`vendor/jackdaw/EVOPOLICYGYM_VENDOR.md`.
+
+## Policy interface
+
+Observations are semantic dictionaries rather than Jackdaw's 235-dimensional
+RL tensor. They contain the current phase, public run progress and resources,
+the Blind, hand, Jokers, consumables, shop, pack, draw-pile composition, poker
+hand levels, and a `legal_actions` description.
+
+The Benchmark specification embeds the stable core manual in
+`metadata.policy_guide`: the run loop, Benchmark reward versus game dollars,
+phase transitions, exact Action shapes, observation semantics, scoring,
+economy, card modifiers, and win/loss conditions. Coding Agents receive this
+guide in their Run instruction without receiving an unseen card catalog.
+
+The source repository separately provides the
+[`optimize-balatro-policy`](../../../skills/optimize-balatro-policy/) Agent
+Skill. It is not part of this Benchmark distribution or `BenchmarkSpec`.
+Select it explicitly with the Balatro script's repeatable
+`--skill skills/optimize-balatro-policy` option. The Run freezes the complete
+directory and exposes it read-only at
+`workspace/skills/optimize-balatro-policy/`. It guides Policy-system
+architecture, replay regression, evidence allocation, strategy development,
+and final candidate handoff without adding hidden game state or entering the
+Policy process.
+
+Every currently visible Joker, Enhancement, Tarot, Planet, Spectral card,
+Voucher, Booster, Blind, and skip Tag carries a version-pinned `rule` object
+derived from the implemented Jackdaw behavior. Visible Edition and Seal names
+refer to the exact definitions in the core guide:
+
+```json
+{
+  "key": "j_jolly",
+  "name": "Jolly Joker",
+  "rule": {
+    "summary": "Jolly Joker: +conditional Mult if hand contains Pair.",
+    "parameters": {"effect": "Type Mult", "t_mult": 8, "type": "Pair"},
+    "rarity": {"level": 1, "name": "Common"}
+  }
+}
+```
+
+Jokers whose tooltip changes with the round, such as Ancient Joker, Castle,
+The Idol, and Mail-In Rebate, additionally expose the currently visible target
+under `rule.visible_state`.
+
+When a Blind is cleared, `round_earnings` exposes the human-visible cash-out
+breakdown: `blind_dollar_reward`, unused-hand and discard bonuses, Joker
+dollars, interest, rental cost, and `total_dollars`. The transition's
+top-level `reward` remains the separate Benchmark reward.
+
+A minimal decision looks like:
+
+```python
+if observation["phase"] == "blind_select":
+    return {"kind": "select_blind"}
+
+if observation["phase"] == "selecting_hand":
+    return {
+        "kind": "play_hand",
+        "card_indices": [0, 2, 4],
+    }
+```
+
+Actions are strict tagged objects. Unknown or missing fields, invalid entity
+indices, duplicate card indices, illegal phases, and invalid consumable targets
+raise `InvalidAction`; Actions are never repaired. Card selection order is
+preserved because it can affect scoring.
+
+## Feedback and replay
+
+Feedback reports the objective score, win rate, mean Ante reached, mean Blinds
+cleared, Policy failures, and the pinned engine revision. It also aggregates
+action counts, played hand types, bought-card and pack-pick types, best hand
+score, best Blind progress, final chip deficit, current and peak money, money
+gained/spent, purchase cost, sale value, and termination outcomes. Bounded
+per-Episode diagnostics retain these same signals so an authoring Agent can
+separate weak hand selection, failed Blind scaling, and poor shop economy.
+Policy failures still score zero, but their public progress before failure is
+reported separately from that scored outcome.
+
+`replay.jsonl` retains complete semantic replays in Episode order within a
+15 MiB public-artifact budget. Aggregate Feedback and Episode summaries still
+cover every requested Episode; `replay_episodes` and
+`replay_episodes_omitted` report detailed replay coverage. Every retained
+initial state and transition state is the complete observation that the Policy
+actually received, including `deck`, `poker_hands`, owned `vouchers`, awarded
+`tags`, and `legal_actions`, plus public-derived transition metrics. This lets a
+Policy-authoring Agent reproduce its decision context without receiving
+Environment or Policy seeds.
+
+This headless distribution contains no official Balatro art, sprites, fonts,
+or animation pipeline, so it does not pretend that a generated chart is a game
+GIF. `replay.jsonl` is the authoritative visualizable artifact: an external
+player may render only the semantic fields it needs without changing the
+Benchmark or exposing hidden draw order.
+
+For Episodes longer than 256 decisions, the replay retains the first 192 and
+final 64 transitions so that both early setup and terminal outcomes remain
+visible. Episode records and aggregate Feedback explicitly report retained and
+omitted transition counts; the 15 MiB budget may additionally omit later whole
+Episode replays.
+
+Each transition's top-level `reward` is the Benchmark reward. A Blind's
+spendable in-game payout is a separate `blind.dollar_reward` value.
+
+## Development
+
+From this directory:
+
+```console
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+```
+
+`ProcessExecution` in the Evaluation test is explicitly unsafe and provides no
+isolation. Its test Program is a trusted package fixture.
+
+## Scope and attribution
+
+This project is not affiliated with LocalThunk, Playstack, or the official
+Balatro project. It includes no official card art, sprites, music, fonts, or
+other game assets.
+
+The rules engine is
+[TylerFlar/jackdaw-balatro](https://github.com/TylerFlar/jackdaw-balatro),
+licensed under MIT. Jackdaw describes itself as an alpha-quality 1:1 Python
+reimplementation and supplies live-game validation tooling, but this Benchmark
+does not claim exhaustive equivalence with every official Balatro version.
+The vendored revision, our deterministic replay checks, and future live
+conformance results together define the supported profile.

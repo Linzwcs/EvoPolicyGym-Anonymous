@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Coding Agent Runs · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="coding-agent-runs">Coding Agent Runs</h1>
+<p>Configure a bounded caller-owned Run only after the initial Program succeeds
+under direct Evaluation.</p>
+<h2 id="contents">Contents</h2>
+<ol>
+<li>Configure the Run</li>
+<li>Select explicit Agent Skills</li>
+<li>Preserve the Agent Session boundary</li>
+<li>Interpret Feedback and Host phases</li>
+<li>Verify and report</li>
+</ol>
+<h2 id="configure-the-run">Configure the Run</h2>
+<p>Use the public SDK and a new <code>record_to</code> path whose parent already exists:</p>
+<pre><code class="language-python">from example_benchmark import ExampleBenchmark, baseline_program
+
+from evopolicygym import Program
+from evopolicygym.run import (
+    AssessmentConfig,
+    ConsoleProgress,
+    RunConfig,
+    ValidationConfig,
+    run,
+)
+from evopolicygym.agents import Codex
+from evopolicygym.execution import ProcessExecution
+from evopolicygym.skills import AgentSkill
+
+result = run(
+    baseline_program(),
+    ExampleBenchmark(),
+    agent=Codex(
+        model=&quot;MODEL_ID&quot;,
+        reasoning_effort=&quot;high&quot;,
+    ),
+    execution=ProcessExecution.unsafe(),
+    record_to=&quot;runs/example-001&quot;,
+    skills=(
+        AgentSkill.from_directory(&quot;skills/example-policy&quot;),
+    ),
+    config=RunConfig(
+        split=&quot;train&quot;,
+        episode_budget=48,
+        episode_pool_size=96,
+        max_episodes_per_submission=4,
+        finish_budget_policy=&quot;require_budget_exhaustion&quot;,
+        validation=ValidationConfig(
+            split=&quot;validation&quot;,
+            episodes_per_candidate=10,
+            max_candidates=3,
+        ),
+        assessment=AssessmentConfig(
+            split=&quot;test&quot;,
+            episodes=20,
+        ),
+        seed=0,
+        episode_timeout_seconds=30,
+        agent_timeout_seconds=3600,
+    ),
+    observer=ConsoleProgress(),
+)
+</code></pre>
+<ul>
+<li>Never reuse or pre-create the Run directory.</li>
+<li>Set finite Episode and time budgets. <code>max_submissions</code> defaults to
+  <code>episode_budget</code>; configure it explicitly only when the Run needs a tighter
+  Submission cap.</li>
+<li>Use an explicit per-Submission Episode cap when the selected Benchmark has
+  trace-heavy or otherwise batch-sensitive Feedback.</li>
+<li>Choose <code>episode_pool_size</code> independently from <code>episode_budget</code> when the
+  Agent needs more fixed matched conditions than it can spend.</li>
+<li>Keep <code>finish_budget_policy="allow_early"</code> when Episode budget is a ceiling,
+  or select <code>"require_budget_exhaustion"</code> for comparable Runs that must spend
+  every Episode unit. In strict mode, make sure the configured Submission
+  count and per-Submission cap have enough total capacity.</li>
+<li>Add <code>ConsoleProgress()</code> only as a non-authoritative observer. Observer
+  failure must not change Run semantics.</li>
+<li>State that <code>ProcessExecution.unsafe()</code> does not isolate the Agent or Policy.</li>
+</ul>
+<h2 id="select-explicit-agent-skills">Select explicit Agent Skills</h2>
+<p>Capture each task-specific Skill with <code>AgentSkill.from_directory()</code> and pass
+it explicitly to <code>run(..., skills=...)</code>.</p>
+<p>Each Skill is a complete immutable directory snapshot projected read-only at
+<code>workspace/skills/&lt;name&gt;/</code> and retained by digest. Do not rely on repository
+discovery, attach a Skill to <code>BenchmarkSpec</code>, or expose Skill content to the
+Policy. Do not pass this general caller-side Skill as a replacement for a
+Benchmark-specific Policy workflow.</p>
+<h2 id="preserve-the-agent-session-boundary">Preserve the Agent Session boundary</h2>
+<p>The Host creates the workspace, projects the Agent-only
+<code>evopolicygym-session</code> client, and generates the current instructions for
+submission, candidate handoff, budgets, and paths.</p>
+<ul>
+<li>Treat those Host-generated instructions as authoritative.</li>
+<li>Do not invoke Agent Session commands from the external operator workflow.</li>
+<li>Do not duplicate Session command syntax in provider integrations or
+  Benchmark-specific metadata.</li>
+<li>Treat public Episode selectors as indices into one fixed Host-owned training
+  pool. Reusing an index consumes budget again while preserving its hidden
+  Episode specification and Policy seed.</li>
+<li>Treat a successful candidate handoff as the end of Agent authority. Host
+  Validation and Assessment begin only after Agent cleanup.</li>
+<li>In a strict finish-budget Run, treat <code>budget_remaining</code> as a retryable
+  rejection: continue legal submissions until <code>episodes_remaining</code> is zero,
+  then retry <code>finish</code> with the selected published candidates.</li>
+</ul>
+<h2 id="interpret-feedback-and-host-phases">Interpret Feedback and Host phases</h2>
+<ul>
+<li>Read Agent-visible public Feedback by its documented relative paths.</li>
+<li>Compare Program revisions on matched <code>episode_index</code> values. Different index
+  sets are unmatched noisy evidence.</li>
+<li>Treat failed trusted evaluation attempts as consumed budget.</li>
+<li>Use <code>ValidationConfig</code> to compare ordered candidates on identical private
+  Validation Episodes. Never publish that evidence into the Agent workspace.</li>
+<li>Use <code>AssessmentConfig</code> only to measure the selected Program on an
+  independently seeded held-out split. Assessment never reranks candidates or
+  provides a fallback.</li>
+</ul>
+<h2 id="verify-and-report">Verify and report</h2>
+<p>Inspect the retained terminal result and <code>run.json</code>. Report:</p>
+<ul>
+<li>selected Benchmark and environment digest;</li>
+<li>initial and final Program digests;</li>
+<li>Run split, seed, submission and Episode budgets, and pool size;</li>
+<li>selected task-specific Skill names and digests;</li>
+<li>ordered candidate IDs;</li>
+<li>Validation configuration and aggregate selection result;</li>
+<li>Assessment configuration and aggregate measurement;</li>
+<li>terminal reason and final submission;</li>
+<li>verification commands and the remaining lack of process isolation.</li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

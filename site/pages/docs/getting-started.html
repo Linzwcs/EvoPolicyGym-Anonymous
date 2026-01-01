@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>From the extracted review archive: · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h2 id="installation">Installation</h2>
+<p>You need Python <code>3.12</code> and <a href="https://docs.astral.sh/uv/"><code>uv</code></a> <code>0.11.16</code>.</p>
+<pre><code class="language-console"># From the extracted review archive:
+cd anonymous-policy-benchmark
+uv sync --project environments/gymnasium/classic_control/cartpole --extra dev
+uv run --project environments/gymnasium/classic_control/cartpole \
+  evopolicygym --version
+</code></pre>
+<p>Expected version output:</p>
+<pre><code class="language-text">evopolicygym 0.3.0
+</code></pre>
+<p>This installs the EvoPolicyGym Kernel and the independent CartPole Benchmark.</p>
+<h2 id="evaluate-the-baseline">Evaluate the baseline</h2>
+<p>Run the packaged baseline over five validation Episodes:</p>
+<pre><code class="language-console">uv run --project environments/gymnasium/classic_control/cartpole python - &lt;&lt;'PY'
+from cartpole import CartPoleBenchmark, baseline_program
+from evopolicygym import EvaluationConfig, evaluate
+from evopolicygym.execution import ProcessExecution
+
+result = evaluate(
+    baseline_program(),
+    CartPoleBenchmark(),
+    execution=ProcessExecution.unsafe(),
+    config=EvaluationConfig(split=&quot;validation&quot;, episodes=5, seed=42),
+)
+print(result.feedback.score)
+print(result.feedback.content)
+PY
+</code></pre>
+<p>The result contains a scalar score, public Feedback, the Program digest, and
+sanitized Episode summaries.</p>
+<p><strong>Local process execution</strong></p>
+<p><code>ProcessExecution.unsafe()</code> runs Policy code with your operating-system user
+permissions. It is not a sandbox. Use it only with trusted code.</p>
+<h2 id="next-steps">Next steps</h2>
+<ul>
+<li><a href="programs.html">Create a Program</a></li>
+<li><a href="policy.html">Write a Policy</a></li>
+<li><a href="evaluation.html">Configure an Evaluation</a></li>
+<li><a href="runs.html">Run a Coding Agent</a></li>
+<li><a href="../environments/README.html">Choose another Environment</a></li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

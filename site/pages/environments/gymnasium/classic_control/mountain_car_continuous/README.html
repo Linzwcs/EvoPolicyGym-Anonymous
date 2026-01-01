@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Continuous Mountain Car Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-continuous-mountain-car-benchmark">EvoPolicyGym Continuous Mountain Car Benchmark</h1>
+<p>This directory contains the independently installable Continuous Mountain Car
+Benchmark for EvoPolicyGym. It adapts Gymnasium
+<code>MountainCarContinuous-v0</code> through the public EvoPolicyGym authoring SPI.</p>
+<p>The Benchmark contract is:</p>
+<ul>
+<li>one semantic observation dictionary containing the car's finite <code>position</code>
+  and signed <code>velocity</code>, with units and meanings in the public specification;</li>
+<li>one exact finite floating-point Action in <code>[-1.0, 1.0]</code>, representing
+  directional force;</li>
+<li>one complete Gymnasium Episode with a 999-step hard horizon;</li>
+<li>deterministic, split-scoped hidden environment seeds;</li>
+<li>mean Episode return as the scalar score;</li>
+<li><code>-100</code> return for a Policy failure, below the minimum theoretical complete
+  Episode return of <code>-99.9</code>.</li>
+</ul>
+<p>Each step subtracts <code>0.1 × action²</code>, and the transition reaching position
+<code>0.45</code> with nonnegative velocity adds 100 points. Higher scores therefore
+reward reaching the goal with less control effort.</p>
+<p>The complete public dynamics are also carried by <code>BenchmarkSpec</code>. For signed
+force <code>f</code> in <code>[-1, 1]</code>, the adapter checks Gymnasium against:</p>
+<pre><code class="language-text">velocity' = clip(velocity + f*0.0015 - cos(3*position)*0.0025,
+                 -0.07, 0.07)
+position' = clip(position + velocity', -1.2, 0.6)
+reward = (100 if the goal is reached else 0) - 0.1*f²
+</code></pre>
+<p>Moving left into position <code>-1.2</code> resets velocity to zero. The initial position
+is sampled from <code>[-0.6, -0.4]</code> and initial velocity is zero. The official task
+contract is documented in the
+<a href="https://gymnasium.farama.org/main/environments/classic_control/mountain_car_continuous/">Gymnasium Continuous Mountain Car reference</a>.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from mountain_car_continuous import (
+    MountainCarContinuousBenchmark,
+    baseline_program,
+)
+</code></pre>
+<p><code>MountainCarContinuousBenchmark</code> owns the public specification, deterministic
+Episode planning, fresh Environment construction, scoring, Feedback, and trace
+publication. <code>baseline_program()</code> returns an intentionally weak zero-force
+Policy suitable as the starting point for development Runs.</p>
+<p>Actions are never clipped, cast, or replaced. Integers, booleans, non-finite
+floats, out-of-range floats, and structured values raise <code>InvalidAction</code>.
+The adapter wraps an accepted scalar float in the one-element sequence expected
+by Gymnasium.</p>
+<p>The Benchmark adapter converts Gymnasium's positional array into:</p>
+<pre><code class="language-json">{
+  &quot;position&quot;: -0.527,
+  &quot;velocity&quot;: 0.004
+}
+</code></pre>
+<p>The names are part of the Benchmark contract. A Policy does not need to infer
+the Gymnasium array order.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return, mean Episode length, success and time-limit
+counts, control cost, mean absolute force, trajectory position extrema, closest
+remaining goal gap, Policy failures, and bounded trace coverage. This separates
+failure to build momentum from excessive control expenditure.</p>
+<p>The public <code>trace.jsonl</code> artifact retains at most eight Episodes. Every
+transition contains the observations seen by the Policy, unmodified scalar
+Action, reward, termination flags, and public transition metrics. Metrics
+decompose engine and gravity effects, control cost and goal bonus, state deltas,
+direction reversals, left-wall collisions, goal distance, running extrema,
+cumulative cost and return, remaining steps, and terminal reason. Episode rows
+state the outcome, extrema, and aggregate effort.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/classic_control/mountain_car_continuous
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by the Evaluation test is explicitly unsafe and
+provides no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

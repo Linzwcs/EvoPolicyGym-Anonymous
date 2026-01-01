@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Train-only experiment protocol · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="train-only-experiment-protocol">Train-only experiment protocol</h1>
+<p>In a formal EvoPolicyGym Run, the Agent receives only train submissions from
+one fixed Host-owned Episode pool. The Host exposes Run-local integer indices,
+not the hidden Environment or Policy seeds behind them. The Agent may select
+and reuse indices across submissions; the same index preserves its hidden
+Episode specification and Policy seed while every use creates fresh runtime
+state and consumes budget again. Host Validation and Assessment start only
+after <code>finish</code> closes Agent authority, use independent Host-only Episodes, and
+never return evidence to the workspace.</p>
+<p>Create evidence roles by partitioning the train budget, not by pretending to
+have Benchmark validation data.</p>
+<h2 id="contents">Contents</h2>
+<ul>
+<li>Partition before the first submission</li>
+<li>Run development experiments</li>
+<li>Enter frozen confirmation once</li>
+<li>Report metrics and hand off to the Host</li>
+<li>Keep an evidence ledger</li>
+</ul>
+<h2 id="partition-before-the-first-submission">Partition before the first submission</h2>
+<p>Read the available Run-local index range, total Episode budget,
+per-submission cap, maximum submissions, and candidate limit. Pool size is the
+number of selectable conditions; budget is the total number of evaluations,
+including repeated indices. Write down both an index allocation and a spend
+allocation before seeing results. A useful starting point is:</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th style="text-align: right;">Approximate budget</th>
+<th>Index policy</th>
+<th>Replay use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baseline and correctness</td>
+<td style="text-align: right;">10%</td>
+<td>small declared baseline set</td>
+<td>inspect</td>
+</tr>
+<tr>
+<td>Diagnosis and architecture</td>
+<td style="text-align: right;">20%</td>
+<td>declared development sets</td>
+<td>inspect</td>
+</tr>
+<tr>
+<td>Capability experiments</td>
+<td style="text-align: right;">45%</td>
+<td>matched control/candidate selectors</td>
+<td>inspect</td>
+</tr>
+<tr>
+<td>Frozen confirmation</td>
+<td style="text-align: right;">25%</td>
+<td>pre-reserved unseen train indices</td>
+<td>aggregates only</td>
+</tr>
+</tbody>
+</table>
+<p>Adapt percentages to the budget, but reserve at least two meaningful
+submissions for frozen confirmation when limits allow, or one when the budget
+is very small. Reserve their indices before development and do not inspect
+them early. Never borrow the entire reserve to continue an attractive
+experiment. Record every submission's preassigned role and exact selector in
+the evidence ledger. Keep that ledger in working reasoning rather than adding
+non-Policy artifacts to the submitted <code>program/</code>.</p>
+<h2 id="run-development-experiments">Run development experiments</h2>
+<ol>
+<li>Record the control Program digest and an exact inverse edit or restore
+   method allowed by the workspace. Do not add backups inside <code>program/</code>.</li>
+<li>State one hypothesis, eligible public states, decisions it may change,
+   safety guards, and rejection conditions.</li>
+<li>Before spending Episodes, use development replay or a counterfactual audit.
+   Count eligible states and changed actions. Drop behavior-neutral ideas unless
+   they are correctness or architecture work.</li>
+<li>Choose a small, predeclared development selector. Submit the exact control
+   digest and candidate digest on the same indices. Restore and verify the
+   control digest before its submission when needed.</li>
+<li>Compare outcomes only after matching each public <code>episode_index</code>. This is a
+   matched train A/B, not access to the hidden seed or Case.</li>
+<li>If promising, repeat the comparison on a second predeclared selector. Pool
+   only identical digests, retain per-index deltas, and check consistency
+   across selectors.</li>
+<li>Treat results from different selectors as unmatched noisy evidence. Never
+   claim a paired improvement unless the index sets match exactly.</li>
+<li>Revert rejected work exactly and verify the restored digest.</li>
+</ol>
+<p>Use replay counterfactuals for action-level comparison and repeated immutable
+digests for environment-level confidence.</p>
+<h2 id="enter-frozen-confirmation-once">Enter frozen confirmation once</h2>
+<p>Before consuming the reserved confirmation budget:</p>
+<ol>
+<li>Stop adding capabilities.</li>
+<li>Freeze a credible shortlist of immutable digests represented by published
+   submissions and the rule for ordering them.</li>
+<li>Evaluate each feasible frozen candidate on the same pre-reserved,
+   previously unseen train selector. Verify every restored digest before
+   measuring it.</li>
+<li>Inspect only terminal aggregates. Do not open confirmation replay to design
+   another patch.</li>
+<li>Use confirmation to reject brittle candidates or adjust shortlist order,
+   not to resume threshold tuning. At <code>finish</code>, include at most one published
+   submission ID for each distinct candidate digest.</li>
+</ol>
+<p>Confirmation is still train evidence, not true validation. Its protection comes
+from reserving it before development and stopping adaptive edits when it begins.
+If a Policy failure appears, prefer a previously published safe candidate.</p>
+<h2 id="report-the-right-metrics">Report the right metrics</h2>
+<p>Balatro <code>run-score-v3</code> reward is <code>rounds_cleared</code> without a win and
+<code>2 * rounds_cleared</code> on a win. Clearing 24 Blinds and winning scores 48;
+skipped Blinds do not count. Read <code>won</code> and <code>rounds_cleared</code> from public
+<code>content.episode_diagnostics</code>, whose indices are positions within that batch,
+or from explicitly enriched Episode entries. Match diagnostics to Episode
+entries by batch position, not by the selected train Episode index. The
+analysis scripts require these fields: a win after 8 cleared Blinds and a
+loss after 16 cleared Blinds both score 16, so reward cannot identify wins.
+Keep older scoring versions separate. Report reward and progress separately:</p>
+<ul>
+<li>immutable Program digest, submission IDs, evidence role, selected indices,
+  and Episodes;</li>
+<li>wins and Policy failures;</li>
+<li>mean and median Blinds cleared;</li>
+<li>early deaths (<code>≤5</code>);</li>
+<li>mid-game completions (<code>≥12</code>);</li>
+<li>late-game completions (<code>≥18</code>);</li>
+<li>repeated-submission consistency for the same digest.</li>
+</ul>
+<p>A rare win demonstrates ceiling, not a stable win rate. Do not rank candidates
+only by the largest submission mean.</p>
+<h2 id="hand-off-to-the-host">Hand off to the Host</h2>
+<p>Consume the legal Episode budget, then call <code>finish</code> with the strongest
+published submission or ordered credible shortlist allowed by the task. The
+Host evaluates shortlisted Programs on identical private Validation Episodes
+after Agent exit and selects by the declared metric and tie-breaks. Assessment
+then measures only the selected Program and never changes selection.</p>
+<p>Do not attempt to reproduce either stage from train Feedback. Never expect,
+inspect, or adapt to Host Validation or Assessment evidence.</p>
+<h2 id="keep-an-evidence-ledger">Keep an evidence ledger</h2>
+<p>Use one row per immutable digest, selector, and evidence role:</p>
+<table>
+<thead>
+<tr>
+<th>Digest</th>
+<th>Submission IDs</th>
+<th>Selector</th>
+<th>Role</th>
+<th style="text-align: right;">Episodes</th>
+<th>Mean / median</th>
+<th style="text-align: right;">≤5</th>
+<th style="text-align: right;">≥12</th>
+<th style="text-align: right;">≥18</th>
+<th style="text-align: right;">Wins</th>
+<th style="text-align: right;">Failures</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Link public artifacts and record whether replay was inspected. Keep rejected
+experiments so later agents do not repeat the same adaptive overfit.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

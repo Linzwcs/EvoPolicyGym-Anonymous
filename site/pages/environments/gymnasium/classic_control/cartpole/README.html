@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym CartPole Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-cartpole-benchmark">EvoPolicyGym CartPole Benchmark</h1>
+<p>This directory is the minimal reference for an independently installable
+EvoPolicyGym Benchmark. It adapts Gymnasium <code>CartPole-v1</code> and depends only on
+the public EvoPolicyGym SDK.</p>
+<p>The package contains:</p>
+<ul>
+<li><code>CartPoleBenchmark</code>: public specification, deterministic Episode planning,
+  Environment construction, scoring, and Feedback;</li>
+<li><code>CartPoleEnvironment</code>: one fresh seeded Gymnasium instance per Episode;</li>
+<li><code>baseline_program()</code>: an intentionally weak initial Policy Program;</li>
+<li>tests for deterministic replay, invalid Actions, Feedback privacy, trace
+  publication, and direct Evaluation.</li>
+</ul>
+<h2 id="contract">Contract</h2>
+<p>The live observation is a four-element Python-float list containing cart
+position (m), cart velocity (m/s), pole angle from upright (rad), and pole
+angular velocity (rad/s). Gymnasium produces the values as <code>float32</code>; the
+adapter converts them to exact Python <code>float</code> carriers without claiming extra
+source precision.</p>
+<p>Action <code>0</code> applies 10 N left and Action <code>1</code> applies 10 N right. Dynamics use a
+0.02-second explicit-Euler step. Every transition, including a failing one,
+rewards <code>+1</code>, so return equals survived steps. Absolute cart position above
+2.4 m or pole angle above 12 degrees terminates; surviving 500 steps truncates
+successfully. Physics constants, initial-state sampling, units, thresholds,
+reward, and horizon are public environment parameters.</p>
+<h2 id="feedback">Feedback</h2>
+<p>The score is mean Episode return. A Policy failure contributes zero return.
+Feedback also reports mean steps, time-limit successes, cart-limit and
+pole-angle-limit terminations, plus one public <code>trace.jsonl</code> Artifact. At most
+eight Episodes are traced so publication remains bounded.</p>
+<p>Each trace begins with an Episode record followed by zero or more transition
+records. A transition contains:</p>
+<ul>
+<li>the observation received by the Policy;</li>
+<li>the unmodified Action;</li>
+<li>reward and next observation;</li>
+<li>termination and truncation flags;</li>
+<li>named action and applied force;</li>
+<li>elapsed simulation time, threshold margins, angle in radians and degrees,
+  balance flags, survival fraction, and exact terminal reason.</li>
+</ul>
+<p>Environment seeds, Policy seeds, scenarios, Host paths, private metrics, and
+runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/classic_control/cartpole
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by the Evaluation tests is explicitly unsafe and
+provides no isolation. The test Programs are trusted package fixtures.</p>
+<p>Agent choice, Run coordination, execution settings, workspace management, and
+CLI presentation remain outside this Benchmark package.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

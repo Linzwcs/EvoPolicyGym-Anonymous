@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym HalfCheetah Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-halfcheetah-benchmark">EvoPolicyGym HalfCheetah Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium
+<code>HalfCheetah-v5</code> through EvoPolicyGym's public authoring SPI and official
+packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from half_cheetah import (
+    HalfCheetahBenchmark,
+    HalfCheetahConfig,
+    baseline_program,
+)
+
+benchmark = HalfCheetahBenchmark(
+    HalfCheetahConfig(
+        frame_skip=5,
+        forward_reward_weight=1.0,
+        ctrl_cost_weight=0.1,
+        reset_noise_scale=0.1,
+        exclude_current_positions_from_observation=True,
+    )
+)
+</code></pre>
+<p>All listed parameters are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. Gymnasium's official <code>half_cheetah.xml</code>
+model is fixed. Custom XML paths and rendering/camera settings are Host-owned
+and never cross the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The default Policy observation contains seventeen named floats: torso root
+height and pitch, six back/front leg joint angles, torso root x/z velocity, and
+seven angular velocities. Earlier <code>front_tip_*</code> labels were incorrect for the
+official model's <code>rootx</code>, <code>rootz</code>, and <code>rooty</code> qpos/qvel entries and have been
+replaced with <code>torso_*</code>. With
+<code>exclude_current_positions_from_observation=False</code>, <code>torso_x_position</code> is
+prepended.</p>
+<p>An Action is an exact six-float list containing the back and front thigh, shin,
+and foot controls, each in <code>[-1.0, 1.0]</code>. The actuator order is back
+thigh/shin/foot then front thigh/shin/foot, with respective gears
+<code>[120, 90, 60, 120, 60, 30]</code>. Integers, tuples, non-finite values, and
+out-of-range values are rejected rather than converted or clipped.</p>
+<p>HalfCheetah never terminates naturally and truncates after 1000 steps. Reward
+is exactly <code>forward_weight*x_velocity - control_weight*sum(action²)</code>. MuJoCo's
+model timestep is <code>0.01 s</code>; one Policy step spans <code>0.01 × frame_skip</code> seconds.
+The scalar Benchmark score is mean Episode return. Gymnasium's published
+solution threshold is <code>4800</code>.</p>
+<p>Policy failure receives a configuration-scaled return no greater than <code>-1000</code>.
+The packaged baseline applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports final and net x displacement, trajectory x extrema, mean and
+peak forward/backward velocity, forward-step fraction, torso height and pitch
+range, action magnitude, cumulative forward reward and control penalty,
+time-limit outcomes, Policy failures, and bounded trace coverage.</p>
+<p><code>trace.jsonl</code> retains at most four Episodes with complete Policy observations
+and exact Actions. Per-step metrics contain joint-named controls, gear-scaled
+controls, elapsed time, initial/current/net x position, velocity and direction
+fractions, torso pose, current and cumulative reward decomposition, and
+terminal reason. Episode rows publish corresponding aggregate diagnostics.</p>
+<p>Every Episode with at least one valid transition also preserves every captured
+256 × 256 <code>rgb_array</code> frame losslessly in <code>rendered-frames.npz</code>, together with
+step indices, rewards, reward presence, and cumulative returns. The Benchmark
+captures the initial pose, first result, terminal result, and a fixed stride of
+intermediate results, with at most 42 frames per Episode. An H.264 MP4 at five
+frames per second is derived from exactly that sequence for direct playback;
+the MP4 is presentation, while the NPZ is the pixel-exact evidence. Both use
+<code>retention="bulk"</code>, and the manifest states whether capture is complete for
+the sampling schedule and whether the schedule covers every Episode step. Raw
+RGB tensors are removed from <code>trace.jsonl</code> and never become Policy
+observations. Rendering failure is diagnostic and does not change physics or
+score; zero-step failures publish an explicit unavailable manifest.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/half_cheetah
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

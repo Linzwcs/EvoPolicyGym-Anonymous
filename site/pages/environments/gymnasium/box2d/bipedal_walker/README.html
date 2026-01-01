@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym BipedalWalker Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-bipedalwalker-benchmark">EvoPolicyGym BipedalWalker Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium
+<code>BipedalWalker-v3</code> through EvoPolicyGym's public authoring SPI.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from bipedal_walker import (
+    BipedalWalkerBenchmark,
+    BipedalWalkerConfig,
+    baseline_program,
+)
+
+benchmark = BipedalWalkerBenchmark(
+    BipedalWalkerConfig(hardcore=False)
+)
+</code></pre>
+<p>The non-rendering Gymnasium constructor parameter <code>hardcore</code> is published
+through <code>BenchmarkSpec.environment_parameters</code>, contributes to
+<code>environment_digest</code>, and is delivered to every Policy. Hardcore terrain adds
+stumps, pits, and stairs.</p>
+<h2 id="contract">Contract</h2>
+<p>The Policy receives a semantic object containing:</p>
+<ul>
+<li>hull angle in radians plus separately documented normalized hull and linear
+  velocities;</li>
+<li>named hip angles in radians, knee angles offset by <code>+1</code> radian, and joint
+  angular velocities normalized by their respective <code>4</code> or <code>6 rad/s</code> motor
+  speeds;</li>
+<li>exact boolean ground contact for both feet;</li>
+<li>ten normalized lidar range fractions, ordered from downward to forward.</li>
+</ul>
+<p>An Action is an exact four-float list in the order
+<code>[left_hip, left_knee, right_hip, right_knee]</code>. Every value must be in
+<code>[-1.0, 1.0]</code>. Its sign selects motor direction and its magnitude selects
+maximum torque, not motor speed. Hip target speed is <code>±4 rad/s</code>, knee target
+speed is <code>±6 rad/s</code>, and full magnitude permits <code>80 N·m</code>. Integers, tuples,
+non-finite numbers, and out-of-range values are rejected rather than converted
+or clipped.</p>
+<p>An Episode terminates when the hull touches the ground, the walker moves behind
+the start, or the walker reaches the far end. It otherwise truncates at
+Gymnasium's 1600-step limit. On a normal transition:</p>
+<pre><code class="language-text">shaping = 130*world_x/30 - 5*abs(hull_angle)
+reward = delta(shaping) - 0.028*sum(abs(action))
+</code></pre>
+<p>A hull collision or movement behind the start overrides the whole transition
+reward with <code>-100</code>; it does not merely add a fall penalty to the normal terms.
+The scalar Benchmark score is mean Episode return; Gymnasium's published
+solution threshold is 300.</p>
+<p>Policy failure receives a conservative <code>-1000</code> return. The packaged baseline
+applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback distinguishes completed courses, falls/movement behind the start, and
+time limits. It reports requested versus actually charged motor penalty (the
+terminal <code>-100</code> override replaces normal terms), forward and posture shaping,
+estimated relative course progress, hull stability, normalized forward speed,
+foot-contact fractions, action magnitude, lidar clearance, Policy failures,
+and bounded trace coverage.</p>
+<p><code>trace.jsonl</code> retains at most four Episodes. Transition metrics identify all
+four requested motor commands, target speeds and torque caps, reward
+decomposition and override status, relative progress, hull pose and recovered
+world velocities, contact changes and support phase, nearest lidar ray,
+remaining steps, and terminal reason. Episode rows provide matching aggregate
+diagnostics and an explicit outcome.</p>
+<p>Every Episode with at least one valid transition also preserves every captured
+600 × 400 upstream <code>rgb_array</code> frame losslessly in <code>rendered-frames.npz</code>, with
+step indices, rewards, reward presence, and cumulative returns. The Benchmark
+captures the initial pose, first result, terminal result, and a fixed stride of
+intermediate results, with at most 42 frames per Episode. It derives an H.264
+MP4 at five frames per second from exactly those frames for direct playback.
+The NPZ is pixel-exact evidence and the MP4 is a presentation artifact; both
+use <code>retention="bulk"</code>. Raw RGB tensors are removed from <code>trace.jsonl</code> and
+never become Policy observations. Rendering failure is diagnostic and cannot
+change physics or score; zero-step failures publish an explicit unavailable
+manifest.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/box2d/bipedal_walker
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p>The independent project installs Gymnasium's <code>box2d</code> extra. <code>ProcessExecution</code>
+used by Evaluation tests is explicitly unsafe and provides no isolation. The
+packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

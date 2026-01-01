@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MetaWorld Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="metaworld-benchmark">MetaWorld Benchmark</h1>
+<p>This independent distribution exposes MetaWorld 3.1.1 multi-task benchmarks
+through EvoPolicyGym's single-Policy authoring surface.</p>
+<p><code>MetaWorldConfig.profile</code> accepts any of the 50 canonical <code>*-v3</code> task names for
+MT1, plus <code>mt10</code>, <code>mt50</code>, or <code>custom</code>. A custom profile requires a fixed tuple
+of canonical task names:</p>
+<pre><code class="language-python">from metaworld_benchmarks import MetaWorldBenchmark, MetaWorldConfig
+
+mt1 = MetaWorldBenchmark(MetaWorldConfig(profile=&quot;assembly-v3&quot;))
+mt10 = MetaWorldBenchmark(MetaWorldConfig(profile=&quot;mt10&quot;))
+custom = MetaWorldBenchmark(
+    MetaWorldConfig(
+        profile=&quot;custom&quot;,
+        custom_tasks=(&quot;reach-v3&quot;, &quot;push-v3&quot;, &quot;door-open-v3&quot;),
+    )
+)
+</code></pre>
+<p>The Host fixes the task collection for a Run and chooses the concrete task for
+each Episode. MT1 observations are canonical 39-element <code>float64</code>
+<code>TensorValue</code>s. MT10, MT50, and custom observations add a public one-hot task
+tensor with a public index-to-task mapping in the environment parameters.
+The public parameters explicitly document that <code>TensorValue</code> is not iterable
+and show the packed little-endian <code>float64</code> decoding pattern for Policies.
+Run-visible traces retain only the Policy-visible state and task one-hot; they
+never include Episode seeds, Host scenarios, or other private Case identity.</p>
+<p>The primary metric is mean Episode return from MetaWorld's upstream dense
+reward. Success rate remains a separately reported task-completion outcome.
+Public reward-component traces provide intermediate optimization feedback. Current values, per-step
+changes, and Episode-best values are reported for reach/contact, grasp,
+in-place progress, object-to-target distance, and dense reward. Feedback also
+distinguishes current versus ever-achieved success/grasp, first achievement,
+later regression, action magnitude/saturation, state motion, and per-task
+success/return for MT collections. Each traced transition
+contains the Policy-visible observation, Action, reward, next observation, and
+public metrics. Episodes longer than 160 steps retain the first 128 and final 32
+steps, with retained and omitted counts reported explicitly. ML1/ML10/ML45 are
+reserved until the Kernel has an explicit Trial abstraction.</p>
+<p>Every Episode with at least one valid transition also preserves every captured
+128x128 frame from the versioned <code>overview-v1</code> MuJoCo free camera losslessly in
+<code>rendered-frames.npz</code>, together with step indices, rewards, reward presence,
+and cumulative returns. A bounded animated GIF is derived from the same frames
+for convenient inspection; it is not the sole visual evidence. The Host
+captures the initial state, first result, terminal result, and an adaptive
+stride of intermediate results, with at most 42 frames per Episode. Raw RGB
+values exist in Host-side Step metrics during evaluation, are removed from
+JSONL traces, and never become Policy observations. The lossless frame
+evidence and derived GIF use <code>retention="bulk"</code>. Each manifest states whether
+capture is complete for the configured sampling schedule and whether it covers
+every Episode step.</p>
+<p><code>overview-v1</code> is fixed at look-at <code>(0.0, 0.65, 0.12)</code>, distance <code>1.35</code>,
+azimuth <code>160</code>, and elevation <code>-22</code> degrees. These camera parameters are part of
+the public Environment identity so visual evidence remains comparable across
+Runs.</p>
+<p>Feedback includes one visual-evidence manifest for every Episode. A zero-step Policy
+failure has no public post-reset artifact channel, so it is retained as an
+explicit unavailable visual-evidence result rather than being silently omitted. Episode
+seeds and private scenario identity never cross the Policy boundary.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

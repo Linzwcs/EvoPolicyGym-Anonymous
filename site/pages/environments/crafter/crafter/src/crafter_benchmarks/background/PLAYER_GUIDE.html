@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Crafter Player Guide · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../../../docs/index.html">Documentation</a><a href="../../../../../../../../index.html#environments">Environments</a><a href="../../../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="crafter-player-guide">Crafter Player Guide</h1>
+<p>Crafter is an open-world survival game. You are not merely exploring a map or
+collecting isolated rewards: you are trying to keep one vulnerable character
+alive while gathering food and water, surviving repeated day-night cycles,
+building shelter, and progressing from raw materials to tools and weapons.</p>
+<p>The world is procedurally generated, so fixed routes do not transfer between
+episodes. Use the visible terrain, creatures, player status, and inventory to
+decide what is possible now.</p>
+<h2 id="read-the-observation">Read the observation</h2>
+<p>The Benchmark may expose one of two observation profiles. The public Benchmark
+specification identifies which one is active.</p>
+<p>In the RGB profile, the <code>64 x 64 x 3</code> image has two parts:</p>
+<ul>
+<li>The upper portion is a local 9 by 7 tile view centered on the player. It
+  shows terrain, resources, creatures, placed structures, projectiles, and the
+  current daylight level.</li>
+<li>The lower two rows are the inventory and status display. Each item is shown
+  with a count from 0 through 9.</li>
+</ul>
+<p>In the separate <code>local-symbolic-v1</code> profile, the same visible spatial area is
+provided as two row-major <code>7 x 9</code> grids named <code>terrain</code> and <code>entities</code>, with
+the player at row 3, column 4. Named <code>inventory</code> values, <code>facing</code>, <code>sleeping</code>,
+and <code>daylight</code> are provided alongside the grids. This profile removes image
+recognition and inventory OCR, but it does not provide a global map, absolute
+position, seeds, achievement counters, action masks, or hidden creature and
+survival counters. The Benchmark specification defines the stable symbolic
+IDs and exact carriers.</p>
+<p>The display order is:</p>
+<pre><code class="language-text">row 1: health, food, drink, energy, sapling, wood, stone, coal, iron
+row 2: diamond, wood pickaxe, stone pickaxe, iron pickaxe,
+       wood sword, stone sword, iron sword
+</code></pre>
+<p>The player sprite in RGB, or <code>facing</code> in the symbolic profile, indicates the
+facing direction. Movement attempts always change the facing direction, even
+when the destination is blocked.</p>
+<h2 id="actions">Actions</h2>
+<pre><code class="language-text">0  noop                 9  place_furnace
+1  move_left           10  place_plant
+2  move_right          11  make_wood_pickaxe
+3  move_up             12  make_stone_pickaxe
+4  move_down           13  make_iron_pickaxe
+5  do                   14  make_wood_sword
+6  sleep                15  make_stone_sword
+7  place_stone         16  make_iron_sword
+8  place_table
+</code></pre>
+<p>Most interactions concern the tile directly in front of the player:</p>
+<ul>
+<li><code>do</code> drinks, gathers a material, harvests a ripe plant, or attacks a
+  creature on the facing tile.</li>
+<li>A movement Action aimed at an impassable tile turns the player toward that
+  tile without entering it. A following <code>do</code> can then interact with it.</li>
+<li>A placement Action places on the facing tile. The tile must be empty and
+  valid for that structure.</li>
+<li>A crafting Action does not use the facing tile, but its required utility
+  blocks must be within one tile of the player.</li>
+</ul>
+<p>An Action whose requirements are not satisfied simply has no useful effect.
+Do not treat an attempted Action as proof that gathering, placement, or
+crafting succeeded; check the next screen and inventory.</p>
+<h2 id="staying-alive">Staying alive</h2>
+<p>Every episode starts with 9 health, 9 food, 9 drink, and 9 energy. Resource and
+tool inventory starts empty. Health reaching zero ends the episode permanently;
+there is no revival within an episode.</p>
+<p>While awake:</p>
+<ul>
+<li>food decreases by one after roughly every 26 Actions;</li>
+<li>drink decreases by one after roughly every 21 Actions;</li>
+<li>energy decreases by one after roughly every 31 Actions.</li>
+</ul>
+<p>When food, drink, and energy are available, health slowly regenerates. If any
+necessity is missing, health eventually degenerates. Starvation and
+dehydration are therefore delayed threats: waiting until health starts falling
+is much too late to begin searching for supplies.</p>
+<h3 id="water-and-food">Water and food</h3>
+<ul>
+<li>Face an adjacent water tile and use <code>do</code> to gain one drink, up to the maximum
+  of 9. Water remains after drinking, so a known shoreline is a reusable water
+  source.</li>
+<li>A cow has 3 health. An unarmed attack deals 1 damage, so killing a healthy
+  cow normally requires three adjacent <code>do</code> Actions. Killing it supplies 6
+  food.</li>
+<li>A planted sapling becomes a ripe plant only after more than 300 nearby world
+  updates. Harvest a ripe plant with <code>do</code> for 4 food. An unripe plant gives no
+  food.</li>
+</ul>
+<h3 id="energy-and-sleep">Energy and sleep</h3>
+<p>Sleeping restores energy but does not make world time run faster and does not
+instantly skip to morning. Each sleeping step advances the world by one normal
+update. While sleeping, food and drink are consumed at half their awake rates,
+and health recovers about twice as quickly when the other necessities are
+present. Sleep ends automatically when energy is full.</p>
+<p>A nearby zombie deals 2 health damage per normal hit but 7 damage when it hits
+a sleeping player. Taking damage wakes the player. Sleeping in open terrain
+does not provide protection from either creatures or projectiles.</p>
+<h2 id="day-night-and-enemies">Day, night, and enemies</h2>
+<p>One light-dark cycle lasts 300 Actions. The first episode begins in daylight,
+is brightest near step 60, becomes substantially dark after about step 150,
+is darkest near step 210, and returns to daylight by step 300. This cycle then
+repeats.</p>
+<p>Darkness is not cosmetic. Zombies become much more numerous as daylight
+decreases. Skeletons are common around cave paths and can fire arrows from a
+distance.</p>
+<ul>
+<li>A zombie has 5 health, pursues a nearby player, and attacks from an adjacent
+  tile. It takes five unarmed hits, three wood-sword hits, two stone-sword
+  hits, or one iron-sword hit to defeat a healthy zombie.</li>
+<li>A skeleton has 3 health and shoots along cardinal directions. Solid terrain
+  blocks its projectiles, while water does not.</li>
+<li>Swords change attack damage: unarmed 1, wood sword 2, stone sword 3, and iron
+  sword 5.</li>
+<li>Lava kills the player immediately when entered.</li>
+</ul>
+<p>Combat does not prevent additional monsters from spawning. An unarmed
+character can also be hit while approaching or fighting a creature.</p>
+<h2 id="ground-movement-and-collision">Ground movement and collision</h2>
+<p>Movement depends on both the ground material and whether an object already
+occupies the destination tile. The player, cows, zombies, skeletons, plants,
+and other objects cannot share a tile. A movement attempt into an occupied or
+non-walkable tile changes the player's facing direction but not position.</p>
+<p>The terrain rules are:</p>
+<table>
+<thead>
+<tr>
+<th>Tile material</th>
+<th>Player</th>
+<th>Cow, zombie, skeleton</th>
+<th>Skeleton arrow</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>grass, path, sand</td>
+<td>can enter if unoccupied</td>
+<td>can enter if unoccupied</td>
+<td>can cross</td>
+</tr>
+<tr>
+<td>water</td>
+<td>cannot enter</td>
+<td>cannot enter</td>
+<td>can cross</td>
+</tr>
+<tr>
+<td>lava</td>
+<td>enters but dies immediately</td>
+<td>cannot enter</td>
+<td>can cross</td>
+</tr>
+<tr>
+<td>tree</td>
+<td>cannot enter</td>
+<td>cannot enter</td>
+<td>stops</td>
+</tr>
+<tr>
+<td>stone, coal, iron, diamond</td>
+<td>cannot enter</td>
+<td>cannot enter</td>
+<td>stops</td>
+</tr>
+<tr>
+<td>table, furnace</td>
+<td>cannot enter</td>
+<td>cannot enter</td>
+<td>destroys the block on impact</td>
+</tr>
+</tbody>
+</table>
+<p>Ground creatures do not mine or remove terrain. In particular, cows, zombies,
+and skeletons cannot cut trees or break natural or placed stone. A skeleton's
+arrow is different from creature movement: it crosses water and lava, stops at
+solid terrain, and removes a table or furnace that it hits.</p>
+<p>The player can change some blocking tiles with <code>do</code>: trees require no tool,
+stone and coal require a wood pickaxe, iron requires a stone pickaxe, and
+diamond requires an iron pickaxe. Mining turns those resource tiles into
+walkable ground. Monsters do not have an equivalent mining action.</p>
+<p><code>place_stone</code> turns the facing tile into the same stone material used by
+natural stone terrain. Placed stone therefore has the same collision,
+projectile-blocking, and wood-pickaxe mining rules as natural stone. These are
+tile mechanics; the game does not assign a special "shelter" state to an area.</p>
+<h2 id="stone-shelter-and-safe-waiting">Stone shelter and safe waiting</h2>
+<p>A shelter is created through ordinary terrain collision rather than a special
+game state. An area is enclosed only when every walkable approach to the player
+is blocked by solid terrain. Natural and placed stone are especially useful
+boundaries because ground creatures cannot enter, mine, or remove them, and
+stone also stops skeleton arrows.</p>
+<p>A player with a wood pickaxe can mine into a sufficiently thick natural stone
+region to create an interior pocket. Closing its remaining walkable opening
+with placed stone can join the entrance back into the surrounding solid rock.
+Suitable natural geometry can therefore reduce the amount of collected stone
+needed for an enclosure.</p>
+<p>Collected stone can instead be placed as a continuous artificial boundary
+around an interior area. This works without a useful natural rock formation
+but normally requires more stone. One isolated stone block, an incomplete
+wall, or an open entrance is not an enclosure; creatures can walk around it.</p>
+<p>Sleeping is a way to wait more resource-efficiently inside an already enclosed
+area, not a substitute for making that area safe. The world and all creatures
+continue updating normally while the player sleeps. Because sleep ends when
+energy becomes full, it also does not guarantee that one sleep period lasts
+until daylight.</p>
+<h2 id="gathering-rules">Gathering rules</h2>
+<p>Use <code>do</code> while facing the resource.</p>
+<table>
+<thead>
+<tr>
+<th>Source tile</th>
+<th>Requirement</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tree</td>
+<td>none</td>
+<td>1 wood; tree becomes grass</td>
+</tr>
+<tr>
+<td>grass</td>
+<td>none</td>
+<td>10% chance of 1 sapling</td>
+</tr>
+<tr>
+<td>water</td>
+<td>none</td>
+<td>1 drink; water remains</td>
+</tr>
+<tr>
+<td>stone</td>
+<td>wood pickaxe</td>
+<td>1 stone; tile becomes path</td>
+</tr>
+<tr>
+<td>coal</td>
+<td>wood pickaxe</td>
+<td>1 coal; tile becomes path</td>
+</tr>
+<tr>
+<td>iron</td>
+<td>stone pickaxe</td>
+<td>1 iron; tile becomes path</td>
+</tr>
+<tr>
+<td>diamond</td>
+<td>iron pickaxe</td>
+<td>1 diamond; tile becomes path</td>
+</tr>
+</tbody>
+</table>
+<p>Grass, path, and sand are normally walkable. Water, trees, stone, ores, tables,
+and furnaces block ordinary movement. Do not confuse <code>place_stone</code> with mining
+stone: collecting stone always uses <code>do</code> and requires a wood pickaxe.</p>
+<h2 id="placement-rules">Placement rules</h2>
+<p>Placement affects the empty tile directly in front of the player.</p>
+<table>
+<thead>
+<tr>
+<th>Structure</th>
+<th style="text-align: right;">Cost</th>
+<th>Valid ground</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>table</td>
+<td style="text-align: right;">2 wood</td>
+<td>grass, sand, or path</td>
+</tr>
+<tr>
+<td>furnace</td>
+<td style="text-align: right;">4 stone</td>
+<td>grass, sand, or path</td>
+</tr>
+<tr>
+<td>stone</td>
+<td style="text-align: right;">1 stone</td>
+<td>grass, sand, path, water, or lava</td>
+</tr>
+<tr>
+<td>plant</td>
+<td style="text-align: right;">1 sapling</td>
+<td>grass</td>
+</tr>
+</tbody>
+</table>
+<p>Do not place a table or furnace into a creature, resource object, occupied
+tile, or invalid terrain. After placing a production facility, stay within one
+tile while crafting; walking away can put it out of range.</p>
+<h2 id="crafting-manual">Crafting manual</h2>
+<p>Crafting consumes inventory immediately and requires the listed nearby
+facility. The correct Action numbers matter: Action 11 makes a wood pickaxe,
+whereas Action 14 makes a wood sword.</p>
+<table>
+<thead>
+<tr>
+<th>Product</th>
+<th style="text-align: right;">Action</th>
+<th>Ingredients</th>
+<th>Nearby facility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>wood pickaxe</td>
+<td style="text-align: right;">11</td>
+<td>1 wood</td>
+<td>table</td>
+</tr>
+<tr>
+<td>stone pickaxe</td>
+<td style="text-align: right;">12</td>
+<td>1 wood + 1 stone</td>
+<td>table</td>
+</tr>
+<tr>
+<td>iron pickaxe</td>
+<td style="text-align: right;">13</td>
+<td>1 wood + 1 coal + 1 iron</td>
+<td>table + furnace</td>
+</tr>
+<tr>
+<td>wood sword</td>
+<td style="text-align: right;">14</td>
+<td>1 wood</td>
+<td>table</td>
+</tr>
+<tr>
+<td>stone sword</td>
+<td style="text-align: right;">15</td>
+<td>1 wood + 1 stone</td>
+<td>table</td>
+</tr>
+<tr>
+<td>iron sword</td>
+<td style="text-align: right;">16</td>
+<td>1 wood + 1 coal + 1 iron</td>
+<td>table + furnace</td>
+</tr>
+</tbody>
+</table>
+<p>The main production chain is:</p>
+<pre><code class="language-text">3 wood minimum
+  -&gt; spend 2 wood to place a table
+  -&gt; spend 1 wood at the table to make a wood pickaxe
+  -&gt; mine stone and coal
+  -&gt; use wood + stone at the table to make a stone pickaxe
+  -&gt; mine iron
+  -&gt; spend 4 stone to place a furnace
+  -&gt; use wood + coal + iron near both table and furnace for iron equipment
+  -&gt; use an iron pickaxe to mine diamond
+</code></pre>
+<p>The minimum total cost of a table followed by one wood tool is 3 wood. A table,
+wood pickaxe, and wood sword together cost 4 wood.</p>
+<h2 id="rules-that-are-easy-to-misread">Rules that are easy to misread</h2>
+<ul>
+<li>Sleep advances world time and offers no protection of its own.</li>
+<li>One adjacent stone block does not enclose the player; monsters can walk
+  around an open side.</li>
+<li>A cow and a zombie have multiple health points, so one successful <code>do</code> does
+  not normally defeat them.</li>
+<li>A crafting Action without the ingredients or nearby facilities has no
+  useful effect.</li>
+<li>Wood-pickaxe Action 11 and wood-sword Action 14 are different Actions.</li>
+<li>A table can become too distant for crafting after the player moves away.</li>
+<li>Stone collection requires <code>do</code> and a wood pickaxe; <code>place_stone</code> performs the
+  opposite operation and consumes inventory stone.</li>
+<li>Lava is enterable by the player but sets health to zero immediately.</li>
+</ul></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

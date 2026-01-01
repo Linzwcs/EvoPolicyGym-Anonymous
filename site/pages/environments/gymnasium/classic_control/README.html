@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Gymnasium Classic Control · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="gymnasium-classic-control">Gymnasium Classic Control</h1>
+<p>The five Gymnasium Classic Control tasks are packaged as independent
+EvoPolicyGym Benchmark distributions. They share an upstream suite and
+Gymnasium dependency, but they do not import one another or share a Python
+environment.</p>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Package</th>
+<th>Policy observation</th>
+<th>Policy action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="cartpole/README.html">CartPole</a></td>
+<td><code>evopolicygym-benchmark-cartpole</code></td>
+<td>Four named finite floats</td>
+<td>Integer <code>0</code> or <code>1</code></td>
+</tr>
+<tr>
+<td><a href="acrobot/README.html">Acrobot</a></td>
+<td><code>evopolicygym-benchmark-acrobot</code></td>
+<td>Six named finite floats</td>
+<td>Integer <code>0</code>, <code>1</code>, or <code>2</code></td>
+</tr>
+<tr>
+<td><a href="mountain_car/README.html">Mountain Car</a></td>
+<td><code>evopolicygym-benchmark-mountain-car</code></td>
+<td>Named position and velocity</td>
+<td>Integer <code>0</code>, <code>1</code>, or <code>2</code></td>
+</tr>
+<tr>
+<td><a href="mountain_car_continuous/README.html">Continuous Mountain Car</a></td>
+<td><code>evopolicygym-benchmark-mountain-car-continuous</code></td>
+<td>Named position and velocity</td>
+<td>Float in <code>[-1.0, 1.0]</code></td>
+</tr>
+<tr>
+<td><a href="pendulum/README.html">Pendulum</a></td>
+<td><code>evopolicygym-benchmark-pendulum</code></td>
+<td>Named angle coordinates and angular velocity</td>
+<td>Float in <code>[-2.0, 2.0]</code></td>
+</tr>
+</tbody>
+</table>
+<p>Each adapter converts Gymnasium's positional array into a bounded semantic
+dictionary before the value crosses the Policy boundary. Public traces retain
+the same observation value.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

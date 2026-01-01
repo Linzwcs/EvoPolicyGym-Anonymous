@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Warehouseman Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-warehouseman-benchmark">EvoPolicyGym Warehouseman Benchmark</h1>
+<p>This independently installable distribution implements the public rules of
+<a href="https://www.codechef.com/problems/WAREHOUS">CodeChef WAREHOUS, Warehouseman (Challenge)</a>. It depends only on the
+public EvoPolicyGym SDK.</p>
+<p>The Policy receives the warehouse dimensions and complete public shipment
+arrival order, then submits one complete forklift instruction string. The
+Environment parses and executes that string atomically. It rejects illegal
+movement, pickup, drop-off, load, and unload operations; incomplete solutions;
+out-of-order delivery; non-ASCII instructions; and outputs longer than 500,000
+characters.</p>
+<h2 id="independent-implementation">Independent implementation</h2>
+<p>The package uses the public problem contract as the authority for dimensions,
+arrival generation, forklift dynamics, completion, output limit, and scoring.
+Its simulator, version-stable generator, tests, and constructive baseline were
+written independently for EvoPolicyGym. It contains no CodeChef statement
+text, source code, submissions, generated inputs, hidden tests, or other
+contest assets.</p>
+<p>The official problem page and editorial are copyrighted CodeChef materials and
+are not software dependencies or redistributed components. The package records
+their URLs and provenance without granting them the package's MIT license.</p>
+<h2 id="policy-interface">Policy interface</h2>
+<p>The initial observation has this shape:</p>
+<pre><code class="language-python">{
+    &quot;rows&quot;: 6,
+    &quot;columns&quot;: 8,
+    &quot;arrivals&quot;: [17, 2, 31, ...],
+    &quot;instruction_limit&quot;: 500_000,
+}
+</code></pre>
+<p>The Action is the complete instruction string using the official
+<code>N</code>, <code>W</code>, <code>S</code>, <code>E</code>, <code>P</code>, <code>D</code>, <code>LN</code>, <code>LW</code>, <code>LS</code>, <code>LE</code>, <code>UN</code>, <code>UW</code>, <code>US</code>, and
+<code>UE</code> instruction vocabulary.</p>
+<p>The primary metric is mean official normalized cost and lower is better. A
+Policy failure contributes the bounded sentinel cost 1,000,000. Feedback
+publishes aggregate cost and bounded semantic diagnostics; it does not publish
+arrival permutations, Environment seeds, or raw instruction strings. Because
+the Environment executes one complete Action atomically, diagnostics are
+post-execution rather than Policy observations: they decompose character cost
+into movement, mandatory pickup/storage/retrieval/drop handling, and internal
+relocation cycles; report per-shipment cost, instruction-budget use, and the
+gap from the six-character-per-shipment handling lower bound; and verify that
+all operation counts exactly reconstruct the submitted string length.</p>
+<p>The packaged baseline is deliberately simple but complete across the full
+published 6–20 row and column range. It stores shipments from far to near along
+a serpentine path, then uses a deterministic sliding-tile construction to
+retrieve them in numeric order.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/codechef/june18/warehouseman
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by the Evaluation tests is explicitly unsafe and
+provides no isolation. The test Program is a trusted package fixture.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

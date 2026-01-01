@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>HighwayEnv Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="highwayenv-benchmark">HighwayEnv Benchmark</h1>
+<p>This independently installable distribution exposes the ten canonical
+single-agent HighwayEnv tasks through EvoPolicyGym's public Benchmark authoring
+surface.</p>
+<p>The Host selects one fixed <code>HighwayConfig.profile</code> for a Run. The selected
+profile is visible in the public environment parameters and contributes to the
+environment digest. An Agent cannot change it from its Policy.</p>
+<p>Available profiles are <code>highway</code>, <code>merge</code>, <code>roundabout</code>, <code>intersection</code>,
+<code>two-way</code>, <code>exit</code>, <code>u-turn</code>, <code>parking</code>, <code>racetrack</code>, and <code>lane-keeping</code>.
+The first seven use strict discrete meta-actions. The final three use strict
+continuous actions.</p>
+<pre><code class="language-python">from highway_benchmarks import HighwayBenchmark, HighwayConfig
+
+benchmark = HighwayBenchmark(HighwayConfig(profile=&quot;roundabout&quot;))
+</code></pre>
+<p>The primary metric is mean Episode return. Feedback publishes per-Episode
+action/control and speed summaries, crash and success steps, and a diagnostic
+trace covering at most 48 steps in each of four Episodes. Long Episodes retain
+their first and last steps, bounded crash/success/terminal events, and an even
+timeline sample.</p>
+<p>Every selected observation is stored losslessly in a compressed NPZ artifact.
+The trace references exact decision and result arrays and adds a bounded,
+profile-specific semantic view:</p>
+<ul>
+<li>Kinematics profiles label ego and nearby-vehicle features;</li>
+<li>Time-to-Collision profiles report collision-cost and earliest-risk indices;</li>
+<li>Parking reports achieved/desired goals and position, velocity, and heading
+  errors;</li>
+<li>Racetrack reports occupancy and on-road grid statistics;</li>
+<li>Lane Keeping reports state, derivative, reference state, and tracking error.</li>
+</ul>
+<p>For the nine profiles whose upstream Environments support <code>rgb_array</code>, every
+Episode with at least one valid transition also preserves the renderer's
+original RGB frames losslessly in
+<code>rendered-frames.npz</code>, together with step indices, rewards, reward presence,
+and cumulative returns. A smaller annotated GIF is derived from the same
+frames for convenient inspection; it is not the sole visual evidence. The
+Host captures the initial scene, first result, terminal result, and a fixed
+stride of intermediate results, with at most 42 frames per Episode. Short
+Episodes capture every step. Each manifest states separately whether capture
+is complete for that schedule and whether the schedule covers every Episode
+step. Raw RGB values are removed from the JSONL trace and never become Policy
+observations. Both visual artifacts use <code>retention="bulk"</code>.
+The upstream <code>lane-keeping-v0</code> constructor does not support <code>render_mode</code>; its
+Episodes therefore publish an explicit unavailable visual-evidence manifest
+instead of changing the task or synthesizing a renderer.</p>
+<p>The public Benchmark specification now declares the exact shapes, dtypes,
+features, axes, and profile-specific Action meanings. Omitted Episodes and
+steps are explicit. Environment seeds and Host identities are never published.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

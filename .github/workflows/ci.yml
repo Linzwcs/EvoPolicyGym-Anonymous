@@ -1,0 +1,239 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  kernel:
+    name: Kernel (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.16"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync locked development environment
+        run: uv sync --locked --extra dev
+
+      - name: Check source quality
+        run: |
+          uv run ruff check src tests
+          uv run mypy
+
+      - name: Run Kernel tests
+        run: uv run python -m unittest discover -s tests
+
+      - name: Check CLI and build
+        run: |
+          uv run evopolicygym --version
+          uv run evopolicygym-session --version
+          uv build
+
+  cartpole:
+    name: CartPole Benchmark (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.16"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync locked Benchmark environment
+        run: >-
+          uv sync
+          --project environments/gymnasium/classic_control/cartpole
+          --locked
+          --extra dev
+
+      - name: Check and test external Benchmark
+        working-directory: environments/gymnasium/classic_control/cartpole
+        run: |
+          uv run ruff check src tests
+          uv run mypy
+          uv run python -m unittest discover -s tests
+          uv build
+
+  minigrid:
+    name: ${{ matrix.project }} Benchmark (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        project:
+          - environments/minigrid/minigrid/blocked_unlock_pickup
+          - environments/minigrid/minigrid/crossing
+          - environments/minigrid/minigrid/dist_shift
+          - environments/minigrid/minigrid/doorkey
+          - environments/minigrid/minigrid/dynamic_obstacles
+          - environments/minigrid/minigrid/empty
+          - environments/minigrid/minigrid/fetch
+          - environments/minigrid/minigrid/four_rooms
+          - environments/minigrid/minigrid/go_to_door
+          - environments/minigrid/minigrid/go_to_object
+          - environments/minigrid/minigrid/keycorridor
+          - environments/minigrid/minigrid/lava_gap
+          - environments/minigrid/minigrid/locked_room
+          - environments/minigrid/minigrid/memory
+          - environments/minigrid/minigrid/multiroom
+          - environments/minigrid/minigrid/obstructed_maze
+          - environments/minigrid/minigrid/playground
+          - environments/minigrid/minigrid/put_near
+          - environments/minigrid/minigrid/red_blue_doors
+          - environments/minigrid/minigrid/unlock
+          - environments/minigrid/minigrid/unlock_pickup
+          - environments/minigrid/minigrid/wfc
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.16"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync locked Benchmark environment
+        run: >-
+          uv sync
+          --project ${{ matrix.project }}
+          --locked
+          --extra dev
+
+      - name: Check and test external Benchmark
+        working-directory: ${{ matrix.project }}
+        run: |
+          uv run ruff check src tests
+          uv run mypy
+          uv run python -m unittest discover -s tests
+          uv build
+
+  environment-suites:
+    name: ${{ matrix.project }} Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - environments/ale/atari
+          - environments/arcprize/arc_agi_3
+          - environments/atcoder/ahc054/treants_forest
+          - environments/atcoder/ahc057/molecules
+          - environments/atcoder/ahc058/apple_incremental_game
+          - environments/codechef/june18/warehouseman
+          - environments/crafter/crafter
+          - environments/dm_control/control_suite
+          - environments/gymnasium/box2d/bipedal_walker
+          - environments/gymnasium/box2d/car_racing
+          - environments/gymnasium/box2d/lunar_lander
+          - environments/gymnasium/classic_control/acrobot
+          - environments/gymnasium/classic_control/mountain_car
+          - environments/gymnasium/classic_control/mountain_car_continuous
+          - environments/gymnasium/classic_control/pendulum
+          - environments/gymnasium/mujoco/ant
+          - environments/gymnasium/mujoco/half_cheetah
+          - environments/gymnasium/mujoco/hopper
+          - environments/gymnasium/mujoco/humanoid
+          - environments/gymnasium/mujoco/humanoid_standup
+          - environments/gymnasium/mujoco/inverted_double_pendulum
+          - environments/gymnasium/mujoco/inverted_pendulum
+          - environments/gymnasium/mujoco/pusher
+          - environments/gymnasium/mujoco/reacher
+          - environments/gymnasium/mujoco/swimmer
+          - environments/gymnasium/mujoco/walker2d
+          - environments/gymnasium/toy_text/blackjack
+          - environments/gymnasium/toy_text/cliff_walking
+          - environments/gymnasium/toy_text/frozen_lake
+          - environments/gymnasium/toy_text/taxi
+          - environments/gymnasium_robotics/robotics
+          - environments/highway_env/highway_env
+          - environments/jackdaw/balatro
+          - environments/jumanji/jumanji
+          - environments/metaworld/metaworld
+          - environments/minigrid/babyai
+          - environments/nle/nethack
+          - environments/robosuite/robosuite
+          - environments/stable_retro/airstriker
+          - environments/vizdoom/vizdoom
+        include:
+          - project: environments/dm_control/control_suite
+            mujoco_gl: egl
+          - project: environments/gymnasium/mujoco/half_cheetah
+            mujoco_gl: egl
+          - project: environments/gymnasium_robotics/robotics
+            mujoco_gl: egl
+          - project: environments/metaworld/metaworld
+            mujoco_gl: egl
+          - project: environments/robosuite/robosuite
+            mujoco_gl: egl
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.16"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install headless MuJoCo rendering runtime
+        if: matrix.mujoco_gl == 'egl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libegl1 libgl1-mesa-dri
+
+      - name: Sync locked Benchmark environment
+        run: uv sync --project ${{ matrix.project }} --locked --extra dev
+
+      - name: Check, test, and build external Benchmark
+        working-directory: ${{ matrix.project }}
+        env:
+          MUJOCO_GL: ${{ matrix.mujoco_gl || 'glfw' }}
+        run: |
+          uv run ruff check src tests
+          uv run mypy
+          uv run python -m unittest discover -s tests
+          uv build

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Acrobot Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-acrobot-benchmark">EvoPolicyGym Acrobot Benchmark</h1>
+<p>This directory contains the independently installable Acrobot Benchmark for
+EvoPolicyGym. It adapts Gymnasium <code>Acrobot-v1</code> through the public
+EvoPolicyGym authoring SPI.</p>
+<p>The Benchmark contract is:</p>
+<ul>
+<li>one semantic observation dictionary containing six named finite floats: the
+  sine and cosine of both joint angles and both angular velocities;</li>
+<li>three exact integer Actions: <code>0</code>, <code>1</code>, and <code>2</code>, applying negative, zero, and
+  positive torque;</li>
+<li>one complete Gymnasium Episode with a 500-step hard horizon;</li>
+<li>deterministic, split-scoped hidden environment seeds;</li>
+<li>mean Episode return as the scalar score;</li>
+<li><code>-500</code> return for a Policy failure, matching the minimum complete Episode
+  return so invalid code cannot outperform a valid Policy.</li>
+</ul>
+<p>Gymnasium assigns <code>-1</code> to every non-terminal step and <code>0</code> to the successful
+terminal step. Higher scores therefore mean reaching the target in fewer
+steps. The official task contract is documented in the
+<a href="https://gymnasium.farama.org/environments/classic_control/acrobot/">Gymnasium Acrobot reference</a>.</p>
+<p><code>theta1</code> is measured from the downward direction and <code>theta2</code> is relative to
+the first link. With one-meter links, the public success condition is
+<code>-cos(theta1) - cos(theta1 + theta2) &gt; 1</code>. Actions apply <code>-1</code>, <code>0</code>, or <code>+1</code>
+N·m at the middle joint. The specification publishes this formula, units,
+0.2-second RK4 integration, book dynamics, physical constants, initial-state
+sampling, velocity bounds, rewards, and 500-step horizon.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from acrobot import AcrobotBenchmark, baseline_program
+</code></pre>
+<p><code>AcrobotBenchmark</code> owns the public specification, deterministic Episode
+planning, fresh Environment construction, scoring, Feedback, and trace
+publication. <code>baseline_program()</code> returns an intentionally weak zero-torque
+Policy suitable as the starting point for development Runs.</p>
+<p>Actions are never clipped, cast, or replaced. Booleans, floats, out-of-range
+integers, and structured values raise <code>InvalidAction</code>.</p>
+<p>The Benchmark adapter converts Gymnasium's positional array into:</p>
+<pre><code class="language-json">{
+  &quot;cos_theta_1&quot;: 0.998,
+  &quot;sin_theta_1&quot;: -0.062,
+  &quot;cos_theta_2&quot;: 1.000,
+  &quot;sin_theta_2&quot;: -0.009,
+  &quot;theta_1_angular_velocity&quot;: -0.100,
+  &quot;theta_2_angular_velocity&quot;: 0.031
+}
+</code></pre>
+<p>The names are part of the Benchmark contract. A Policy does not need to infer
+the Gymnasium array order.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return, mean Episode length, successful and time-limit
+Episodes, mean and overall best free-end height, closest target gap, Policy
+failures, and bounded trace coverage. The public <code>trace.jsonl</code> artifact retains
+at most eight Episodes. It contains the observations seen by the Policy, named
+unmodified Actions, torque, reconstructed absolute and relative angles,
+angular velocities, link and free-end heights, target margin, elapsed simulated
+time, rewards, next observations, termination flags, and terminal reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/classic_control/acrobot
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by the Evaluation test is explicitly unsafe and
+provides no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

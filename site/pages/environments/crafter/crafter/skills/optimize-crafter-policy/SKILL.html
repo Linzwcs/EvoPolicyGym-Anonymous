@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Optimize a Crafter Policy · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../../docs/index.html">Documentation</a><a href="../../../../../../../index.html#environments">Environments</a><a href="../../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="optimize-a-crafter-policy">Optimize a Crafter Policy</h1>
+<p>Maximize additive long-horizon survival and development across deterministic
+but hidden procedural worlds. The Policy receives only a <code>TensorValue</code>
+containing a <code>64 x 64 x 3</code> uint8 RGB frame. It never receives the Environment seed, global semantic map,
+player position, achievement counters, reward, or privileged inventory data.</p>
+<h2 id="respect-the-abi">Respect the ABI</h2>
+<ul>
+<li>Export <code>make_policy(context)</code> from <code>policy.py</code>.</li>
+<li>Return an object with <code>act(observation)</code>.</li>
+<li>Decode <code>TensorValue.data</code> as row-major RGB bytes with shape <code>(64, 64, 3)</code>.</li>
+<li>Return an exact integer from 0 through 16. Booleans, floats, containers, and
+  out-of-range integers are invalid.</li>
+<li>A fresh Policy instance is created for every Episode. Keep only
+  Episode-local memory between calls to <code>act()</code>.</li>
+<li>Read only public static configuration from
+  <code>context.environment_parameters</code>. Never infer or search for hidden seeds.</li>
+</ul>
+<h2 id="actions">Actions</h2>
+<pre><code class="language-text">0  noop                 9  place_furnace
+1  move_left           10  place_plant
+2  move_right          11  make_wood_pickaxe
+3  move_up             12  make_stone_pickaxe
+4  move_down           13  make_iron_pickaxe
+5  do                  14  make_wood_sword
+6  sleep               15  make_stone_sword
+7  place_stone         16  make_iron_sword
+8  place_table
+</code></pre>
+<p><code>do</code> collects or drinks from the facing tile and attacks adjacent creatures.
+Placement and crafting Actions work only when their public in-game
+prerequisites are satisfied.</p>
+<h2 id="achievement-progression">Achievement progression</h2>
+<p>The 22 achievements cover collection, survival, combat, placement, and
+crafting. Build capabilities in a reusable dependency order:</p>
+<pre><code class="language-text">wood -&gt; table -&gt; wood pickaxe -&gt; stone
+stone -&gt; stone pickaxe + furnace
+stone pickaxe -&gt; coal + iron
+wood + coal + iron + nearby table/furnace -&gt; iron pickaxe
+iron pickaxe -&gt; diamond
+</code></pre>
+<p>Swords improve combat survival. Water, cows, plants, sleeping, and daylight
+management protect health, food, drink, and energy. The RGB frame includes the
+local world view and inventory display; build explicit visual parsing and
+Episode memory rather than hard-coded seed routes.</p>
+<h2 id="build-a-verifiable-resource-facility-craft-state-machine">Build a verifiable resource-facility-craft state machine</h2>
+<p>Treat progression as confirmed state transitions, not as a timer that blindly
+cycles through recipe Actions. Keep an Episode-local state machine with at
+least these concepts:</p>
+<ul>
+<li><strong>Resource belief:</strong> visually estimate inventory counts, but distinguish an
+  unconfirmed estimate from a resource whose collection was confirmed by the
+  next RGB frame or HUD change.</li>
+<li><strong>Facility state:</strong> remember whether a table or furnace placement was
+  attempted, visually confirmed, and still believed to be adjacent. Moving
+  away must invalidate adjacency rather than leaving a permanent
+  <code>table_near=True</code> or <code>furnace_near=True</code> flag.</li>
+<li><strong>Progress stage:</strong> advance only after observing evidence for the prior
+  dependency. A useful order is survival stabilization, wood reserve, table,
+  wood tool, stone reserve, stone tool, furnace, coal and iron, iron tool, and
+  diamond.</li>
+<li><strong>Recovery transition:</strong> if expected evidence does not appear after an
+  Action, retry from a legal facing tile, reacquire the missing resource, or
+  rebuild the facility. Do not mark an achievement complete merely because
+  its Action was returned.</li>
+<li><strong>Survival interrupt:</strong> drinking, food, sleep, combat, and escape can
+  temporarily preempt crafting without erasing the current progression stage.</li>
+</ul>
+<p>Make the state machine auditable through behavior. For each revision, inspect
+the achievement event order in the per-Episode <code>trajectory.jsonl.gz</code> Artifacts
+and use <code>artifact-manifest.json</code> to locate the lossless NPZ observation chunks.
+Verify dependencies such as <code>collect_wood</code> before <code>place_table</code>, and
+<code>place_table</code> before <code>make_wood_pickaxe</code>. Re-evaluate a promising unchanged
+Program across additional Episodes before trusting a small batch score.</p>
+<p>Avoid policies whose main behavior is periodic <code>do</code>, periodic sleep, or a
+fixed recipe loop. Those Actions are legal but do not demonstrate that the
+resource and facility preconditions were perceived and maintained.</p>
+<h2 id="optimize-the-actual-score">Optimize the actual score</h2>
+<p>Each transition after which the player remains alive earns one survival point
+and up to <code>0.1</code> weakest-vital credit. The complete return is:</p>
+<pre><code class="language-text">survival + weakest-vital quality
++ absolute first-unlock dependency progress
++ bounded repeated productivity
+</code></pre>
+<p>Every additional survived step remains valuable through the configured
+horizon. First-unlock dependency weights remain exponential, so later tools
+and materials are much more valuable than opening achievements. Repeated
+successful events add at most 25 points and have public caps and diminishing
+returns. A Policy failure returns <code>-max_episode_steps</code> for that Episode. Treat
+differences inside the published 95%
+sampling interval as inconclusive rather than as demonstrated improvement.</p>
+<h2 id="audit-inherited-controller-bias">Audit inherited controller bias</h2>
+<p>Treat the packaged baseline as disposable scaffolding, not as a behavioral
+prior. Before extending it, identify control flow that ignores the current RGB
+observation and replace it when it creates a repeated spatial or Action motif.
+In particular, do not inherit:</p>
+<ul>
+<li>fixed clockwise or counterclockwise direction cycles;</li>
+<li>expanding-square, spiral, or rectangular patrol routes;</li>
+<li>a fixed number of <code>do</code> Actions after every movement regardless of the facing
+  tile;</li>
+<li>periodic placement or crafting attempts without visible prerequisite
+  evidence.</li>
+</ul>
+<p>Exploration should react to visible walkability, resources, facilities,
+creatures, and recent Episode-local movement evidence. Inspect selected NPZ
+frames and the Action sequence after each revision. Repeated local loops
+or a dominant Action-frequency pattern are controller defects unless the
+current observation and state explicitly justify them.</p>
+<h2 id="iterate-safely">Iterate safely</h2>
+<ol>
+<li>Submit the packaged baseline on a small batch.</li>
+<li>Inspect the complete compressed trajectories, achievement success table,
+   and selected frames from the complete lossless NPZ observations.</li>
+<li>Eliminate invalid Actions, exceptions, and timeouts first.</li>
+<li>Add visual parsing for nearby terrain, creatures, facing direction, and
+   inventory icons.</li>
+<li>Add a compact Episode plan for resource dependencies, survival, and
+   exploration.</li>
+<li>Change one capability at a time and compare repeated batches because small
+   achievement samples are noisy.</li>
+</ol>
+<p>Keep submitted Policy source inside <code>program/</code>. Store non-submitted diagnostic
+scripts, selected frames, and derived notes in the Agent-owned <code>analysis/</code>
+directory. Do not access Host paths, runtime internals, or unavailable Crafter
+<code>info</code> fields.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

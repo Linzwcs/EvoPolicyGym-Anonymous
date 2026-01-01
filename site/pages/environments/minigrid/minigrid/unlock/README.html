@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid Unlock Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-unlock-benchmark">MiniGrid Unlock Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for
+<a href="https://minigrid.farama.org/environments/minigrid/UnlockEnv/">MiniGrid Unlock</a>.
+The Policy must find the key matching a locked door and open it.</p>
+<pre><code class="language-python">from minigrid_unlock import UnlockBenchmark, baseline_program
+
+benchmark = UnlockBenchmark()
+program = baseline_program()
+</code></pre>
+<p>The spec defines image axes and channels, view orientation, carried-key and
+compass encodings, the exact reward formula, and termination rules. Feedback
+and the bounded semantic trace expose key and door discovery colors and first
+seen steps, key pickup/drop state, whether the carried key matches the observed
+door, the object in front before interaction, successful opening, failed
+pickup/drop/toggle attempts, remaining horizon, observation novelty,
+ineffective Actions, and per-Action usage without publishing seeds, private
+identity, or Host paths. The baseline uses public observations only. Long
+traces retain the first 128 and final 32 transitions, with retained and omitted
+coverage reported explicitly. Each traced observation also lists visible
+objects with their color and state. <code>ProcessExecution.unsafe()</code> is used only
+for trusted packaged baseline tests and is not a sandbox.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

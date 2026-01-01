@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Environment integration status · EvoPolicyGym</title><link rel="stylesheet" href="../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../docs/index.html">Documentation</a><a href="../../../index.html#environments">Environments</a><a href="../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="environment-integration-status">Environment integration status</h1>
+<p>This ledger covers the planned environment expansion. “Integrated” means an
+independently installable Benchmark distribution exists, uses only the public
+authoring SPI, owns a lockfile and tests, and has passed either a real upstream
+<code>reset()</code>/<code>step()</code> smoke test or rules-conformance tests for an independent
+simulator. “Deferred” means the requested environment requires a Kernel
+capability that the current single-Policy ABI intentionally does not claim.
+“Unavailable” means upstream runtime or redistributable assets are absent;
+metadata-only registrations are not presented as runnable profiles.</p>
+<p>Profiles are public, typed Benchmark configuration selected by the Host before
+a Run. A selected profile is fixed for that Run, visible to the Coding Agent
+and Policy through <code>environment_parameters</code>, and contributes to the
+environment digest. Episode seeds and private scenario identity are not
+profiles and never cross the Policy boundary.</p>
+<h2 id="integrated">Integrated</h2>
+<table>
+<thead>
+<tr>
+<th>Ecosystem</th>
+<th>Coverage</th>
+<th>Distribution layout</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ARC-AGI-3</td>
+<td>All 25 public games returned by the official discovery API on 2026-08-01, pinned by full version ID; custom fixed collections; fresh local game instances with per-Episode seeds supplied when supported upstream; one complete game per Episode with in-Episode level resets, shared official scorecard aggregation, and per-Episode playback GIF Feedback</td>
+<td><a href="arcprize/arc_agi_3/README.html"><code>arcprize/arc_agi_3/</code></a></td>
+</tr>
+<tr>
+<td>AtCoder AHC054</td>
+<td>Treant's Forest with independently generated connected forests, private adventurer target orders, strict atomic Treant placement, and a 2,048-turn score cap</td>
+<td><a href="atcoder/ahc054/treants_forest/README.html"><code>atcoder/ahc054/treants_forest/</code></a></td>
+</tr>
+<tr>
+<td>AtCoder AHC057</td>
+<td>Molecules with all 300 points, 1,000 turns, toroidal double-precision motion, atomic multi-bond Actions, momentum-conserving component velocity, exact 10 × 30 terminal partitions, and official logarithmic cost scoring</td>
+<td><a href="atcoder/ahc057/molecules/README.html"><code>atcoder/ahc057/molecules/</code></a></td>
+</tr>
+<tr>
+<td>AtCoder AHC058</td>
+<td>Apple Incremental Game with the complete 10-ID, four-Level, 500-turn production hierarchy, independent log-uniform case generation, strict affordability, official processing order, and exact log2 scoring</td>
+<td><a href="atcoder/ahc058/apple_incremental_game/README.html"><code>atcoder/ahc058/apple_incremental_game/</code></a></td>
+</tr>
+<tr>
+<td>CodeChef WAREHOUS</td>
+<td>Warehouseman across the complete published 6–20 row and column range, with independent arrival generation, atomic full-solution validation, exact forklift dynamics, official normalized cost, and a guaranteed constructive baseline</td>
+<td><a href="codechef/june18/warehouseman/README.html"><code>codechef/june18/warehouseman/</code></a></td>
+</tr>
+<tr>
+<td>Crafter</td>
+<td>Canonical <code>CrafterReward-v1</code> RGB task with all 17 Actions and 22 achievements; official shifted-geometric scoring, long-horizon development, and additive survival-development scoring</td>
+<td><a href="crafter/crafter/README.html"><code>crafter/crafter/</code></a></td>
+</tr>
+<tr>
+<td>DeepMind Control Suite</td>
+<td>All 28 tasks in dm-control 1.0.43's official <code>suite.BENCHMARKING</code> collection across 14 domains; canonical named state observations, continuous rewards/actions, deterministic task randomization, per-Episode lossless captured-frame evidence plus a derived default-camera replay GIF, and a MuJoCo 3.10 compatibility pin</td>
+<td><a href="dm_control/control_suite/README.html"><code>dm_control/control_suite/</code></a></td>
+</tr>
+<tr>
+<td>Gymnasium Box2D</td>
+<td>LunarLander, BipedalWalker, and CarRacing; LunarLander and BipedalWalker publish per-Episode lossless upstream RGB evidence plus derived H.264 MP4 video, while CarRacing publishes lossless native observation evidence plus a derived GIF</td>
+<td><a href="gymnasium/box2d/README.html"><code>gymnasium/box2d/</code></a></td>
+</tr>
+<tr>
+<td>Gymnasium MuJoCo</td>
+<td>All eleven current <code>v5</code> tasks; HalfCheetah publishes per-Episode lossless 256 × 256 rendered-frame evidence plus derived H.264 MP4 video, while the remaining distributions currently publish semantic state traces</td>
+<td><a href="gymnasium/mujoco/README.html"><code>gymnasium/mujoco/</code></a></td>
+</tr>
+<tr>
+<td>Standard MiniGrid</td>
+<td>19 requested tasks across 18 families: Fetch, MultiRoom, DynamicObstacles, ObstructedMazeFull and ObstructedMazeDlhb, PutNear, RedBlueDoors, BlockedUnlockPickup, UnlockPickup, Unlock, LockedRoom, Crossing, LavaGap, DistShift, GoToObject, GoToDoor, FourRooms, Playground, and Empty</td>
+<td>One leaf distribution per family under <a href="minigrid/minigrid/README.html"><code>minigrid/minigrid/</code></a>; registered sizes and difficulty variants are profiles</td>
+</tr>
+<tr>
+<td>MiniGrid WFC</td>
+<td>All 22 requested presets: MazeSimple, DungeonMazeScaled, RoomsFabric, ObstaclesBlackdots, ObstaclesAngular, ObstaclesHogs2, ObstaclesHogs3, MazeKnot, MazeWall, Maze, MazeSpirals, MazePaths, Mazelike, RoomsOffice, RoomsMagicOffice, Dungeon, DungeonRooms, DungeonLessRooms, DungeonSpirals, Skew2, SkewCave, and SkewLake</td>
+<td><a href="minigrid/minigrid/wfc/README.html"><code>minigrid/minigrid/wfc/</code></a></td>
+</tr>
+<tr>
+<td>BabyAI</td>
+<td>All 40 requested tasks: GoToRedBallGrey, GoToRedBall, GoToRedBallNoDists, GoToObj, GoToLocal, GoTo, GoToImpUnlock, GoToSeq, GoToRedBlueBall, GoToDoor, GoToObjDoor, Open, OpenRedDoor, OpenDoor, OpenTwoDoors, OpenDoorsOrder, Pickup, UnblockPickup, PickupLoc, PickupDist, PickupAbove, PutNextLocal, PutNext, Unlock, UnlockLocal, KeyInBox, UnlockPickup, BlockedUnlockPickup, UnlockToUnlock, ActionObjDoor, FindObj, KeyCorridor, OneRoom, MoveTwoAcross, Synth, SynthLoc, SynthSeq, MiniBossLevel, BossLevel, and BossLevelNoUnlock</td>
+<td><a href="minigrid/babyai/README.html"><code>minigrid/babyai/</code></a></td>
+</tr>
+<tr>
+<td>HighwayEnv</td>
+<td>Highway, Merge, Roundabout, Intersection, TwoWay, Exit, UTurn, Parking, Racetrack, and LaneKeeping; the nine renderable profiles publish per-Episode lossless upstream <code>rgb_array</code> frame evidence plus a derived annotated road-scene GIF, while LaneKeeping reports rendering as unavailable</td>
+<td><a href="highway_env/highway_env/README.html"><code>highway_env/highway_env/</code></a></td>
+</tr>
+<tr>
+<td>Jumanji</td>
+<td>18 single-Policy profiles: Game2048, GraphColoring, Minesweeper, RubiksCube and its partly-scrambled variant, Sudoku and its very-easy variant, SlidingTilePuzzle, BinPack, FlatPack, JobShop, Knapsack, Tetris, CVRP, Maze, Snake, TSP, and PacMan</td>
+<td><a href="jumanji/jumanji/README.html"><code>jumanji/jumanji/</code></a></td>
+</tr>
+<tr>
+<td>Gymnasium-Robotics</td>
+<td>FetchReach, FetchPush, FetchSlide, FetchPickAndPlace, PointMaze, AntMaze, four Adroit Hand tasks, HandReach, Block/Egg/Pen manipulation with base, boolean-touch, and continuous-touch profiles, and FrankaKitchen (21 profiles); task-appropriate Host-only MuJoCo camera capture, per-Episode lossless captured-frame evidence, a derived replay GIF, and a visual-evidence manifest</td>
+<td><a href="gymnasium_robotics/robotics/README.html"><code>gymnasium_robotics/robotics/</code></a></td>
+</tr>
+<tr>
+<td>MetaWorld</td>
+<td>All 50 MT1 <code>*-v3</code> tasks, MT10, MT50, and fixed custom MT collections; Host-only <code>corner2</code> MuJoCo camera capture, per-Episode lossless captured-frame evidence, a derived replay GIF, and a visual-evidence manifest</td>
+<td><a href="metaworld/metaworld/README.html"><code>metaworld/metaworld/</code></a></td>
+</tr>
+<tr>
+<td>robosuite</td>
+<td>All 19 environments registered by robosuite 1.5.2: Lift, Stack, five NutAssembly profiles, six PickPlace profiles, Door, Wipe, ToolHang, and four two-arm tasks; fixed Panda robots, BASIC/OSC pose control, state observations, per-Episode lossless captured-frame evidence plus a derived <code>agentview</code> replay GIF, and a MuJoCo 3.3 compatibility pin</td>
+<td><a href="robosuite/robosuite/README.html"><code>robosuite/robosuite/</code></a></td>
+</tr>
+<tr>
+<td>NLE / NetHack</td>
+<td>Linux-targeted <code>NetHackScore-v0</code> with a fixed Monk role, upstream task Actions, deterministic Episode seed triplets, complete reversible raw training evidence, Agent-owned analysis, and aggregate-only Validation/Assessment</td>
+<td><a href="nle/nethack/README.html"><code>nle/nethack/</code></a></td>
+</tr>
+<tr>
+<td>ALE Atari</td>
+<td>The wheel's redistributable Tetris ROM, RGB observations, the minimal action set, and per-Episode bounded replay GIF Feedback</td>
+<td><a href="ale/atari/README.html"><code>ale/atari/</code></a></td>
+</tr>
+<tr>
+<td>ViZDoom</td>
+<td>12 standard scenarios whose configs and WADs ship in ViZDoom: Basic, Audio, Notifications, DeadlyCorridor, Deathmatch, DefendCenter, DefendLine, HealthGathering, HealthGatheringSupreme, MyWayHome, PredictPosition, and TakeCover; per-Episode bounded replay GIF Feedback</td>
+<td><a href="vizdoom/vizdoom/README.html"><code>vizdoom/vizdoom/</code></a></td>
+</tr>
+<tr>
+<td>Stable-Retro</td>
+<td>The wheel's redistributable Airstriker Level 1 ROM/state, restricted discrete controller actions, and per-Episode bounded replay GIF Feedback</td>
+<td><a href="stable_retro/airstriker/README.html"><code>stable_retro/airstriker/</code></a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="deferred-by-an-explicit-kernel-boundary">Deferred by an explicit Kernel boundary</h2>
+<table>
+<thead>
+<tr>
+<th>Requested environments</th>
+<th>Required capability</th>
+<th>Why they are not represented as single-agent profiles</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MaMuJoCo</td>
+<td>Multi-agent lifecycle and joint-action ABI</td>
+<td>One Policy action and one observation cannot faithfully encode independently addressed agents</td>
+</tr>
+<tr>
+<td>MPE2: Simple, SimpleAdversary, SimpleCrypto, SimpleFormation, SimpleLine, SimplePush, SimpleReference, SimpleSpeakerListener, SimpleSpread, SimpleTag, SimpleWorldComm, CollectTreasure</td>
+<td>Multi-agent lifecycle and joint-action ABI</td>
+<td>Parallel agents, per-agent observations/actions, termination, and rewards need a first-class contract</td>
+</tr>
+<tr>
+<td>PettingZoo Classic: TicTacToe, ConnectFour, Chess, Go, RockPaperScissors, LeducHoldem, TexasHoldem, TexasHoldemNoLimit, GinRummy, Hanabi</td>
+<td>AEC/parallel multi-agent ABI</td>
+<td>Flattening turn ownership into the current action ABI would hide invalid-action and lifecycle semantics</td>
+</tr>
+<tr>
+<td>PettingZoo Butterfly/SISL: CooperativePong, KnightsArchersZombies, Pistonball, Multiwalker, Pursuit</td>
+<td>Parallel multi-agent ABI</td>
+<td>Joint actions and per-agent termination/reward semantics are required</td>
+</tr>
+<tr>
+<td>Jumanji Cleaner, Connector, MMST, MultiCVRP, RobotWarehouse, LevelBasedForaging, and SearchAndRescue</td>
+<td>Multi-agent lifecycle and joint-action ABI</td>
+<td>Their observations, actions, and rewards address multiple agents; flattening them into one Policy action would erase agent ownership</td>
+</tr>
+<tr>
+<td>MetaWorld ML1, ML10, ML45</td>
+<td>Trial abstraction</td>
+<td>Meta-learning support/query phases must not be confused with ordinary independent Episodes</td>
+</tr>
+<tr>
+<td>MiniWoB++ original, no-delay, transfer, email, flight, and hidden-test suites</td>
+<td>Whole-Run virtualization and a browser execution profile</td>
+<td>Browser processes, web assets, and hidden server state need Host-owned lifecycle and isolation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="unavailable-in-the-current-portable-runtime">Unavailable in the current portable runtime</h2>
+<table>
+<thead>
+<tr>
+<th>Requested environments</th>
+<th>Result of integration attempt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Procgen's 16 games: BigFish, BossFight, CaveFlyer, Chaser, Climber, CoinRun, Dodgeball, FruitBot, Heist, Jumper, Leaper, Maze, Miner, Ninja, Plunder, and StarPilot</td>
+<td>The currently published <code>procgen2</code> artifacts do not support this repository's Python 3.12/macOS ARM runtime (the available wheel is CPython 3.11 Linux x86-64 and no source distribution is published). Revisit with a maintained runtime or Docker execution profile.</td>
+</tr>
+<tr>
+<td>Remaining ALE registrations</td>
+<td>ALE 0.12.0 registers 104 environments, but its current wheel supplies a directly runnable ROM only for Tetris. The other 103 registrations fail without separately obtained ROMs.</td>
+</tr>
+<tr>
+<td>Commercial ViZDoom maps</td>
+<td>ViZDoom does not distribute commercial Doom/Doom II IWADs. Metadata or a Host-local WAD path is not a portable Benchmark distribution.</td>
+</tr>
+<tr>
+<td>Remaining Stable-Retro integrations</td>
+<td>Stable-Retro 1.0.1 ships 1,030 integration definitions but a redistributable ROM only for Airstriker. The other integrations require externally supplied ROMs.</td>
+</tr>
+<tr>
+<td>Jumanji Sokoban</td>
+<td>Jumanji 1.1.1 creates its default generator by downloading the Boxoban dataset from Hugging Face. It is excluded until the distribution can pin and provision that dataset without network I/O during Environment construction.</td>
+</tr>
+<tr>
+<td>ManiSkill 3.0.1</td>
+<td>The wheel registers 74 tasks and 61 declare no additional asset downloads, but no task is runnable in this native macOS ARM Host. Both <code>state</code>/<code>physx_cpu</code> construction and the documented <code>render_backend="none"</code> path still force SAPIEN's CPU renderer; ManiSkill's Darwin <code>can_render()</code> path unconditionally creates a Vulkan <code>RenderSystem</code>, which fails here with <code>ErrorIncompatibleDriver</code> because no Vulkan/MoltenVK driver is available. No Benchmark distribution is published until a Vulkan-capable Host profile is provisioned or upstream supports a truly renderer-free CPU scene.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="audited-future-candidates">Audited future candidates</h2>
+<p>These candidates have authoritative upstreams, but are not runnable
+distributions in the current native release. Each row states the concrete
+condition that must change before integration.</p>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Current resolution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.sintef.no/projectweb/top/vrptw/solomon-benchmark/">Solomon VRPTW</a></td>
+<td>Deferred. The authoritative page does not state redistribution terms for the instance files, and a completed route file is not yet an accepted constructive Policy interaction. EdgeBench instances, hidden cases, and best-known score anchors are not substitutes for either requirement.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/wesnoth/wesnoth">Battle for Wesnoth</a></td>
+<td>Deferred to a pinned headless engine profile that owns the executable, Lua AI bridge, independently authored scenarios, opponent policy, timeouts, and cleanup. A Python metadata package cannot make the external game process portable.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/OpenTTD/OpenTTD">OpenTTD</a></td>
+<td>Deferred to a pinned engine profile that owns the executable, base graphics, NoAI bridge, generated-map profile, long-running lifecycle, and deterministic teardown.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/crawl/crawl">Dungeon Crawl Stone Soup</a></td>
+<td>Deferred to a pinned headless engine profile and a verified supported machine-control surface. The EdgeBench Lua scaffold is not an upstream DCSS interface contract.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/OpenRCT2/OpenRCT2">OpenRCT2</a></td>
+<td>Deferred even after an engine profile exists because ordinary play additionally depends on separately licensed RollerCoaster Tycoon 2 data files.</td>
+</tr>
+<tr>
+<td><a href="https://atcoder.jp/contests/ahc056/tasks/ahc056_a">AtCoder AHC056</a> and <a href="https://www.codechef.com/problems/TRICOL">CodeChef TRICOL</a></td>
+<td>Not admitted to the current roadmap. Their authoritative form grades a completed design, and no meaningful incremental Policy interaction has been accepted.</td>
+</tr>
+<tr>
+<td>EdgeBench-only graph, permutation, SMT, and fixed text-adventure leads</td>
+<td>Rejected until each has an independently verified authoritative upstream, redistribution rights, and a non-artificial Environment contract. Fixed commercial text worlds additionally need publisher-level distribution rights.</td>
+</tr>
+</tbody>
+</table>
+<p>Deferred and unavailable rows have been processed and intentionally skipped;
+they are not compatibility promises. A future implementation should add the
+missing Kernel capability or legal asset provisioning first, then introduce a
+new independent distribution with its own conformance and real-environment
+tests.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

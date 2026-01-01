@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Ant Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-ant-benchmark">EvoPolicyGym Ant Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Ant-v5</code>
+through EvoPolicyGym's public authoring SPI and official packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from ant import AntBenchmark, AntConfig, baseline_program
+
+benchmark = AntBenchmark(
+    AntConfig(
+        frame_skip=5,
+        forward_reward_weight=1.0,
+        ctrl_cost_weight=0.5,
+        contact_cost_weight=0.0005,
+        healthy_reward=1.0,
+        main_body=1,
+        terminate_when_unhealthy=True,
+        healthy_z_range=(0.2, 1.0),
+        contact_force_range=(-1.0, 1.0),
+        reset_noise_scale=0.1,
+        exclude_current_positions_from_observation=True,
+        include_cfrc_ext_in_observation=True,
+    )
+)
+</code></pre>
+<p>All listed parameters are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. <code>main_body</code> is restricted to non-world
+body indices <code>1..13</code> in Gymnasium's official <code>ant.xml</code>. That model is fixed;
+custom XML paths and rendering/camera settings are Host-owned and never cross
+the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The default Policy observation contains 27 named torso and joint state floats,
+plus a nested <code>contact_forces</code> object containing all 78 clipped external force
+and torque values for the 13 non-world bodies. Setting
+<code>include_cfrc_ext_in_observation=False</code> omits that object. Setting
+<code>exclude_current_positions_from_observation=False</code> additionally exposes
+<code>torso_x_position</code> and <code>torso_y_position</code>.</p>
+<p>An Action is an exact eight-float list containing hip and ankle controls for
+the four legs, each in <code>[-1.0, 1.0]</code>. The actuator order is back-right,
+front-left, front-right, back-left, with hip then ankle for each pair; this is
+the model actuator order <code>hip_4, ankle_4, hip_1, ...</code>, not qpos joint order.
+Every actuator has gear <code>150</code>, which is published in the spec and exposed as a
+gear-scaled control diagnostic. Integers, tuples, non-finite values, and
+out-of-range values are rejected rather than converted or clipped.</p>
+<p>Reward is exactly:</p>
+<pre><code class="language-text">forward_weight*x_velocity
++ healthy_reward if torso_z is healthy
+- control_weight*sum(action²)
+- contact_weight*sum(clipped_contact_force_components²)
+</code></pre>
+<p>The configured <code>main_body</code> supplies forward velocity; its index and semantic
+body name are public. Contact values are clipped to <code>contact_force_range</code>
+before both observation and cost. Health requires a finite state and torso z
+inside the inclusive configured range. By default, an unhealthy Ant terminates;
+otherwise the Episode truncates after 1000 steps. MuJoCo's model timestep is
+<code>0.01 s</code>, so one Policy step spans <code>0.01 × frame_skip</code> seconds.
+The scalar Benchmark score is mean Episode return. Gymnasium's published
+solution threshold is <code>6000</code>.</p>
+<p>Policy failure receives a configuration-scaled negative return. The packaged
+baseline applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports unhealthy versus time-limit outcomes, final and trajectory x
+positions, distance from origin, mean forward velocity, healthy-step fraction,
+torso tilt, minimum health-height margin, action magnitude, contact intensity,
+all four cumulative reward terms, Policy failures, and bounded trace coverage.</p>
+<p><code>trace.jsonl</code> retains at most one Episode with complete nested Policy
+observations and exact Actions. Per-step metrics contain joint-named controls,
+gear-scaled controls, elapsed time, horizontal kinematics, torso height and
+tilt, quaternion error, health margins, clipped-contact summaries, current and
+cumulative reward decomposition, trajectory extrema, and terminal reason.
+Episode rows publish the corresponding aggregate diagnostics and outcome.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/ant
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

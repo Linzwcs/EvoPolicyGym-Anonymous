@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym setup · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-setup">EvoPolicyGym setup</h1>
+<p>Establish the exact package and version context before building commands.</p>
+<h2 id="select-the-context">Select the context</h2>
+<ul>
+<li>In the EvoPolicyGym repository, use the active source under
+  <code>src/evopolicygym/</code> and the project-managed <code>uv</code> environment.</li>
+<li>In another project, use the installed public package and its matching
+  documentation. Do not apply procedures from a different release.</li>
+<li>Treat every package under <code>environments/</code> as an independently installable
+  Benchmark distribution. The Kernel wheel does not include them.</li>
+<li>Read the selected distribution's README and <code>pyproject.toml</code> before choosing
+  imports, extras, task configuration, or build commands.</li>
+</ul>
+<h2 id="verify-the-repository-environment">Verify the repository environment</h2>
+<p>From the Kernel repository:</p>
+<pre><code class="language-console">uv sync --extra dev
+uv run evopolicygym --version
+uv lock --check
+</code></pre>
+<p>EvoPolicyGym 0.3 requires Python 3.12. If the installed version differs from
+the documentation or selected Benchmark requirement, stop and resolve that
+compatibility mismatch before authoring or evaluation.</p>
+<p>For an Environment distribution, enter its own project directory and use its
+lock and dependency configuration:</p>
+<pre><code class="language-console">uv sync --extra dev
+uv lock --check
+</code></pre>
+<p>Do not assume a successful Kernel import proves that the selected Environment
+distribution or its optional simulator dependencies are installed.</p>
+<h2 id="confirm-public-imports">Confirm public imports</h2>
+<p>Inspect the distribution's documented public module and verify the exact
+Benchmark class, configuration values, and baseline factory before using them.
+Do not guess an import name from a distribution name or environment folder.</p>
+<p>Report the Python version, EvoPolicyGym version, selected distribution and
+version, public import used, commands run, and any unresolved dependency or
+version mismatch.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym CliffWalking Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-cliffwalking-benchmark">EvoPolicyGym CliffWalking Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium
+<code>CliffWalking-v1</code> through EvoPolicyGym's public authoring SPI. The Policy must
+cross a 4×12 grid from start to goal while avoiding the cliff between them.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from cliff_walking import (
+    CliffWalkingBenchmark,
+    CliffWalkingConfig,
+    baseline_program,
+)
+
+benchmark = CliffWalkingBenchmark(
+    CliffWalkingConfig(is_slippery=False)
+)
+</code></pre>
+<p><code>CliffWalkingConfig.is_slippery</code> is published through
+<code>BenchmarkSpec.environment_parameters</code>, contributes to <code>environment_digest</code>,
+and is delivered to every Policy. In slippery mode, the requested direction
+and its two adjacent directions each occur with probability <code>1/3</code>. The full
+map, start, goal, cliff coordinates, state encoding, edge behavior, rewards,
+and horizon are also public environment parameters.</p>
+<h2 id="contract">Contract</h2>
+<p>The positional Gymnasium state is converted into:</p>
+<pre><code class="language-json">{
+  &quot;state&quot;: 36,
+  &quot;row&quot;: 3,
+  &quot;column&quot;: 0,
+  &quot;tile&quot;: &quot;start&quot;
+}
+</code></pre>
+<p>Actions are exact integers: <code>0</code> moves up, <code>1</code> right, <code>2</code> down, and <code>3</code> left.
+An ordinary step returns <code>-1</code>. Entering any cliff cell returns <code>-100</code> and
+places the player back at the start without terminating. Reaching the goal
+returns <code>-1</code> and terminates the Episode.</p>
+<p>The cliff landing and return to start are atomic: the live observation never
+contains <code>tile="cliff"</code>. A <code>-100</code> transition reports an explicit <code>cliff_fall</code>
+event and <code>cliff_then_reset_to_start</code> movement in feedback, avoiding the false
+appearance of an unexplained no-op at the start.</p>
+<p>Gymnasium 1.3.0 does not register a TimeLimit for CliffWalking. This Benchmark
+adds an explicit 200-step horizon in its adapter and returns a normal truncated
+step when the horizon is reached. This makes non-progressing but valid Policies
+scoreable rather than treating them as Environment faults.</p>
+<p>The scalar score is mean Episode return. Policy failure receives <code>-20000</code>,
+equal to the minimum 200-step complete return.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return, mean steps, successful goal reaches, cliff falls,
+boundary no-ops, time limits, Policy failures, and bounded trace coverage.
+<code>trace.jsonl</code> retains at most eight Episodes with complete semantic
+observations, named unmodified Actions, rewards, termination flags, requested
+and observed movement, event classification, sampled branch probability,
+possible sampled directions, total probability of the observed outcome, step
+count, and terminal reason.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, and private runtime
+evidence are never published.</p>
+<p><code>baseline_program()</code> always moves right, repeatedly entering the cliff from
+the initial state. It intentionally establishes the minimum valid baseline.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/toy_text/cliff_walking
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,119 @@
+"""Public caller-owned Codex Agent selection."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from .base import AgentInvocation, AgentTask, resolve_executable
+
+_CODEX_ENVIRONMENT_ALLOWLIST = (
+    "HOME",
+    "CODEX_HOME",
+    "CODEX_API_KEY",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "NO_PROXY",
+    "SSL_CERT_FILE",
+    "SSL_CERT_DIR",
+    "TMPDIR",
+    "LANG",
+    "LC_ALL",
+    "USER",
+    "LOGNAME",
+    "SHELL",
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Codex:
+    """Select the Codex model, reasoning effort, and CLI used by a Run."""
+
+    model: str
+    reasoning_effort: str
+    executable: str = "codex"
+    view_image: bool = False
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.model) is not str
+            or not self.model
+            or len(self.model.encode("utf-8", errors="strict")) > 128
+            or any(character.isspace() for character in self.model)
+            or "\0" in self.model
+        ):
+            raise ValueError("model must be a non-empty bounded identifier")
+        if (
+            type(self.reasoning_effort) is not str
+            or not self.reasoning_effort
+            or len(
+                self.reasoning_effort.encode("utf-8", errors="strict")
+            )
+            > 64
+            or any(
+                not character.isascii()
+                or not (
+                    character.isalnum()
+                    or character in {"-", "_"}
+                )
+                for character in self.reasoning_effort
+            )
+        ):
+            raise ValueError(
+                "reasoning_effort must be a non-empty bounded identifier"
+            )
+        if (
+            type(self.executable) is not str
+            or not self.executable
+            or len(self.executable.encode("utf-8", errors="strict")) > 4_096
+            or "\0" in self.executable
+            or "\r" in self.executable
+            or "\n" in self.executable
+        ):
+            raise ValueError("executable must be a bounded command or path")
+        if type(self.view_image) is not bool:
+            raise TypeError("view_image must be bool")
+
+    def build_invocation(self, task: AgentTask) -> AgentInvocation:
+        """Translate one Host-authored task into a Codex CLI invocation."""
+
+        if type(task) is not AgentTask:
+            raise TypeError("task must be AgentTask")
+        resolved_executable = resolve_executable(self.executable)
+        command_prefix = (
+            resolved_executable,
+            "--ask-for-approval",
+            "never",
+            "--config",
+            f'model_reasoning_effort="{self.reasoning_effort}"',
+            "exec",
+            "--ephemeral",
+            "--json",
+            "--model",
+            self.model,
+            "--sandbox",
+            "danger-full-access",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "--color",
+            "never",
+            *(("-c", "tools.view_image=true") if self.view_image else ()),
+        )
+        identity = {
+            "provider": "codex",
+            "model": self.model,
+            "reasoning_effort": self.reasoning_effort,
+            **({"view_image": "enabled"} if self.view_image else {}),
+        }
+        return AgentInvocation(
+            command=(*command_prefix, task.instructions),
+            recorded_command=(*command_prefix, "@agent/instructions.md"),
+            identity=identity,
+            instructions=task.instructions,
+            inherited_environment=_CODEX_ENVIRONMENT_ALLOWLIST,
+            stdout_media_type="application/x-ndjson",
+        )
+
+
+__all__ = ["Codex"]

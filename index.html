@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>Policy evolution · EvoPolicyGym</title><link rel="stylesheet" href="site/style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="index.html">EvoPolicyGym</a><div class="navlinks"><a href="site/pages/docs/index.html">Documentation</a><a href="index.html#environments">Environments</a><a href="site/pages/REVIEW.html">Review guide</a></div></nav></header>
+<main class="landing"><section class="hero">
+  <div>
+    <div class="eyebrow">Anonymous review artifact · v0.3</div>
+    <h1>Learning through<br>policy evolution.</h1>
+    <p class="lead">EvoPolicyGym evaluates how coding agents experiment, improve executable policies, and generalize across interactive environments.</p>
+    <div class="actions"><a class="button primary" href="site/pages/docs/getting-started.html">Get started ↗</a><a class="button" href="site/pages/REVIEW.html">Code &amp; reproducibility</a></div>
+    <p class="subtle">Anonymous Authors · Source code and local documentation</p>
+  </div>
+  <div class="loop" aria-label="Policy evolution workflow">
+    <div class="loop-title">A bounded learning loop</div>
+    <div class="step"><b>01</b><span>Write an executable policy</span></div>
+    <div class="arrow" aria-hidden="true">↓</div>
+    <div class="step"><b>02</b><span>Experiment within an episode budget</span></div>
+    <div class="arrow" aria-hidden="true">↓</div>
+    <div class="step"><b>03</b><span>Read feedback and revise</span></div>
+    <div class="holdout">After the agent finishes: select on validation, then assess the selected policy on held-out episodes.</div>
+  </div>
+</section>
+<div class="metrics"><div class="metric"><strong>63 distributions</strong><span>Independently installable benchmarks</span></div><div class="metric"><strong>One public interface</strong><span>Policies, feedback, and evaluation</span></div><div class="metric"><strong>Held-out assessment</strong><span>Separated from agent experimentation</span></div></div>
+<section id="protocol"><div class="eyebrow">Evaluation protocol</div><h2>Measure the process of improvement.</h2><div class="cards"><article class="card"><h3>Executable policies</h3><p>Agents write source programs that act in interactive environments. Each episode receives a fresh policy process and scratch directory.</p></article><article class="card"><h3>Budgeted experimentation</h3><p>A fixed pool and explicit episode budget let agents compare candidates using bounded, public feedback.</p></article><article class="card"><h3>Private final evaluation</h3><p>The host owns validation, final selection, and assessment. Retained run records preserve the evidence behind each result.</p></article></div></section>
+<section id="environments"><div class="eyebrow">Environment collections</div><h2>Different worlds. A shared contract.</h2><p class="lead">From classic control and grid worlds to programmatic games and robotic simulation.</p><ul class="catalog"><li><a href="site/pages/environments/ale/atari/README.html">Arcade Learning Environment</a></li>
+<li><a href="site/pages/environments/arcprize/arc_agi_3/README.html">ARC-AGI-3</a></li>
+<li><a href="site/pages/environments/atcoder/README.html">AtCoder AHC</a></li>
+<li><a href="site/pages/environments/codechef/README.html">CodeChef Challenges</a></li>
+<li><a href="site/pages/environments/crafter/README.html">Crafter</a></li>
+<li><a href="site/pages/environments/dm_control/control_suite/README.html">DeepMind Control Suite</a></li>
+<li><a href="site/pages/environments/gymnasium/README.html">Gymnasium</a></li>
+<li><a href="site/pages/environments/gymnasium_robotics/robotics/README.html">Gymnasium Robotics</a></li>
+<li><a href="site/pages/environments/highway_env/highway_env/README.html">HighwayEnv</a></li>
+<li><a href="site/pages/environments/jackdaw/README.html">Balatro / Jackdaw</a></li>
+<li><a href="site/pages/environments/jumanji/jumanji/README.html">Jumanji</a></li>
+<li><a href="site/pages/environments/metaworld/metaworld/README.html">MetaWorld</a></li>
+<li><a href="site/pages/environments/minigrid/README.html">MiniGrid &amp; BabyAI</a></li>
+<li><a href="site/pages/environments/nle/README.html">NetHack Learning Environment</a></li>
+<li><a href="site/pages/environments/robosuite/robosuite/README.html">robosuite</a></li>
+<li><a href="site/pages/environments/stable_retro/airstriker/README.html">Stable-Retro</a></li>
+<li><a href="site/pages/environments/vizdoom/vizdoom/README.html">ViZDoom</a></li></ul><p class="subtle">Availability and platform requirements differ by distribution. See each package's installation and resource notes.</p></section>
+<section id="quickstart"><div class="eyebrow">Start with a baseline</div><h2>Run a deterministic evaluation.</h2><p>Use Python 3.12 and uv 0.11.16 from the extracted repository root.</p><pre class="code"><code>uv sync --project environments/gymnasium/classic_control/cartpole --locked --extra dev
+uv run --project environments/gymnasium/classic_control/cartpole evopolicygym --version</code></pre><p><a href="site/pages/docs/getting-started.html">Follow the complete CartPole evaluation example →</a></p><p class="subtle">Local process execution uses your operating-system permissions. Use trusted policies and agents.</p></section>
+<section><div class="eyebrow">Review materials</div><h2>Implementation, documentation, and checks.</h2><p class="lead">This artifact contains the current v0.3 implementation, bundled baseline policies, and test suites. It does not present historical leaderboard results.</p><div class="actions"><a class="button" href="site/pages/docs/index.html">Read the documentation</a><a class="button" href="site/pages/REVIEW.html">Reproduce the checks</a><a class="button" href="site/pages/ARCHITECTURE.html">Explore the architecture</a></div></section>
+</main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

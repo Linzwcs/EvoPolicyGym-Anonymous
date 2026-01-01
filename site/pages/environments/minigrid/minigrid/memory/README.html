@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid Memory Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-memory-benchmark">MiniGrid Memory Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/MemoryEnv/">MiniGrid Memory</a>
+partially observable T-maze.</p>
+<p>The Policy sees the upstream <code>7 × 7 × 3</code> egocentric symbolic image, compass
+direction, and mission text. It must remember whether the green cue was a key
+or a ball, walk down the corridor, and select the matching object. The primary
+score is mean upstream Episode return; success rate remains separately reported.</p>
+<p>Only <code>turn_left</code>, <code>turn_right</code>, and <code>move_forward</code> are public Actions. The
+upstream environment silently rewrites its nominal <code>pickup</code> Action into
+<code>toggle</code>; this adapter rejects that alias instead of publishing an inaccurate
+Action meaning.</p>
+<h2 id="install-and-test">Install and test</h2>
+<p>From the EvoPolicyGym repository root:</p>
+<pre><code class="language-console">uv sync --project environments/minigrid/minigrid/memory --extra dev
+uv run --project environments/minigrid/minigrid/memory \
+  python -m unittest discover \
+  -s environments/minigrid/minigrid/memory/tests
+uv build environments/minigrid/minigrid/memory
+</code></pre>
+<h2 id="public-api">Public API</h2>
+<pre><code class="language-python">from minigrid_memory import MemoryBenchmark, MemoryConfig, baseline_program
+
+benchmark = MemoryBenchmark(
+    MemoryConfig(profile=&quot;13x13-random&quot;),
+)
+program = baseline_program()
+</code></pre>
+<p>Available profiles are <code>11x11</code>, <code>13x13</code>, <code>13x13-random</code>, and
+<code>17x17-random</code>. The default random-length profile prevents a Policy from
+solving the task using one fixed action count.</p>
+<p>The spec defines image axes and channels, view orientation, compass and object
+encodings, exact reward, Action subset, and terminal conditions. Feedback
+reports when green keys and balls were first observed, the first observed
+green-object type, the object type selected at the terminal decision, the
+current observable task stage, wrong-target choices, remaining horizon,
+observation novelty, ineffective Actions, and per-Action usage. It deliberately
+does not label a private hidden object as “the cue”; every diagnostic is
+derived from the Policy-visible stream. <code>trace.jsonl</code> contains a bounded
+semantic trace for at most four Episodes; long traces retain the first 128 and
+last 32 transitions and contain no Episode seed or private Case identity.</p>
+<p>The packaged baseline is intentionally small. It is a finite-state Policy
+whose same-Episode state remembers the cue; it uses only public Policy context
+and observations.</p>
+<p>Tests that use <code>ProcessExecution.unsafe()</code> run trusted packaged code only.
+That backend is a local process mechanism, not a sandbox and not suitable for
+hostile Programs.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym InvertedPendulum Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-invertedpendulum-benchmark">EvoPolicyGym InvertedPendulum Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium
+<code>InvertedPendulum-v5</code> through EvoPolicyGym's public authoring SPI and official
+packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from inverted_pendulum import (
+    InvertedPendulumBenchmark,
+    InvertedPendulumConfig,
+    baseline_program,
+)
+
+benchmark = InvertedPendulumBenchmark(
+    InvertedPendulumConfig(
+        frame_skip=2,
+        reset_noise_scale=0.01,
+    )
+)
+</code></pre>
+<p>Simulation cadence, actuator gear, termination/reward rules, and reset noise are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. Gymnasium's official
+<code>inverted_pendulum.xml</code> model is fixed. Custom XML paths and rendering/camera
+settings are Host-owned and never cross the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The Policy receives four unclipped <code>float64</code>-derived values: cart position,
+pole angle relative to upright, cart linear velocity, and pole angular
+velocity. Positive cart position is rightward.</p>
+<p>An Action is an exact one-float list <code>[cart_control]</code> in <code>[-3.0, 3.0]</code>.
+Integers, scalar floats, tuples, non-finite values, and out-of-range values are
+rejected rather than converted or clipped. The value is a MuJoCo actuator
+control, not a force expressed directly in newtons: the official model applies
+actuator gear <code>100</code>, so feedback reports both requested control and the
+gear-scaled generalized force.</p>
+<p>The official model timestep is <code>0.02</code> seconds. With default <code>frame_skip=2</code>,
+one Policy step advances <code>0.04</code> simulated seconds. The Episode terminates when
+<code>abs(pole_angle) &gt; 0.2</code> radians (strictly greater) or any state becomes
+non-finite, and otherwise truncates after 1000 steps. Every non-terminating
+step gives reward <code>1</code>; the terminal unhealthy step gives <code>0</code>. The scalar score
+is mean Episode return, with a maximum of <code>1000</code>. Gymnasium's published
+solution threshold is <code>950</code>.</p>
+<p>Policy failure receives a <code>-1000</code> return. The packaged baseline applies zero
+force and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports mean return and steps, outcome counts, cart displacement and
+velocity extrema, final and maximum pole angle, minimum angle margin to the
+failure boundary, pole angular-velocity extrema, action magnitude, Policy
+failures, and bounded trace coverage.</p>
+<p><code>trace.jsonl</code> retains at most eight Episodes. Every transition contains the
+complete before/after observations, exact Action and named component, elapsed
+time, remaining steps, requested and gear-scaled control, state extrema,
+current and minimum angle margin, reward and cumulative return, health status,
+and an explicit terminal reason (<code>none</code>, <code>fallen</code>, <code>time_limit</code>, or both).</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/inverted_pendulum
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

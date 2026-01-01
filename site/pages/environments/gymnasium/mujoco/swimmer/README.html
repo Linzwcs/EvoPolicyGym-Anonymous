@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>EvoPolicyGym Swimmer Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="evopolicygym-swimmer-benchmark">EvoPolicyGym Swimmer Benchmark</h1>
+<p>This independently installable distribution adapts Gymnasium <code>Swimmer-v5</code>
+through EvoPolicyGym's public authoring SPI and official packaged MuJoCo model.</p>
+<h2 id="public-interface">Public interface</h2>
+<pre><code class="language-python">from swimmer import SwimmerBenchmark, SwimmerConfig, baseline_program
+
+benchmark = SwimmerBenchmark(
+    SwimmerConfig(
+        frame_skip=4,
+        forward_reward_weight=1.0,
+        ctrl_cost_weight=0.0001,
+        reset_noise_scale=0.1,
+        exclude_current_positions_from_observation=True,
+    )
+)
+</code></pre>
+<p>All listed parameters plus cadence, actuator gears, reward formula, and horizon are published through
+<code>BenchmarkSpec.environment_parameters</code>, contribute to <code>environment_digest</code>,
+and are delivered to every Policy. Gymnasium's official <code>swimmer.xml</code> model is
+fixed. Custom XML paths and rendering/camera settings are Host-owned and never
+cross the Policy boundary.</p>
+<h2 id="contract">Contract</h2>
+<p>The default Policy observation contains eight named <code>float64</code>-derived values:
+absolute front-link angle, two successive relative rotor angles, instantaneous
+front-tip x/y qvel, and the three corresponding angular qvel values. With
+<code>exclude_current_positions_from_observation=False</code>,
+<code>tip_x_position</code> and <code>tip_y_position</code> are prepended.</p>
+<p>An Action is an exact two-float list containing both rotor controls, each in
+<code>[-1.0, 1.0]</code>. Both official actuators apply gear <code>150</code>, so controls are not
+direct torques in newton-meters. Feedback reports both values. Integers,
+tuples, non-finite values, and out-of-range values are rejected rather than
+converted or clipped.</p>
+<p>The model timestep is <code>0.01</code> seconds; default <code>frame_skip=4</code> advances <code>0.04</code>
+simulated seconds per Policy step. Swimmer never terminates naturally and
+truncates after 1000 steps. Reward uses the step-average x velocity computed as
+<code>(x_after - x_before) / seconds_per_step</code>, which is distinct from the
+instantaneous <code>tip_x_velocity</code> in the next observation, minus weighted squared
+control magnitude. The scalar score is mean Episode return. Gymnasium's
+published solution threshold is <code>360</code>.</p>
+<p>Policy failure receives a configuration-scaled return no greater than <code>-1000</code>.
+The packaged baseline applies zero torque and is intentionally weak.</p>
+<h2 id="feedback-and-trace">Feedback and trace</h2>
+<p>Feedback reports forward and lateral displacement, net displacement, path
+length, lateral-drift maximum, mean/minimum/maximum x velocity, lateral
+velocity, backward-step fraction, action effort, cumulative forward and
+control rewards, outcomes, Policy failures, and bounded trace coverage.</p>
+<p><code>trace.jsonl</code> retains at most four Episodes with complete Policy observations,
+exact named controls, gear-scaled torques, timing, start/current/running
+position extrema, both instantaneous and reward velocities, current angles,
+reward decomposition, cumulative return, and explicit terminal reason. The
+position metrics remain public even when current positions are excluded from
+the observation, matching the existing public Gymnasium <code>info</code> contract.</p>
+<p>Environment seeds, Policy seeds, Host paths, credentials, model paths, and
+private runtime evidence are never published.</p>
+<h2 id="development">Development</h2>
+<p>From the repository root:</p>
+<pre><code class="language-console">cd environments/gymnasium/mujoco/swimmer
+uv sync --extra dev
+uv run ruff check src tests
+uv run mypy
+uv run python -m unittest discover -s tests
+uv build .
+</code></pre>
+<p><code>ProcessExecution</code> used by Evaluation tests is explicitly unsafe and provides
+no isolation. The packaged baseline is trusted test code.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

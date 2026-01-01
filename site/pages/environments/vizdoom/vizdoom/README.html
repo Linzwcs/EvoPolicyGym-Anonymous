@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>ViZDoom Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../docs/index.html">Documentation</a><a href="../../../../../index.html#environments">Environments</a><a href="../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="vizdoom-benchmark">ViZDoom Benchmark</h1>
+<p>This independent distribution exposes the 12 standard ViZDoom 1.3.0 scenarios
+whose WAD/config assets ship in the upstream wheel. The Host fixes one
+<code>ViZDoomConfig.profile</code> per Run.</p>
+<pre><code class="language-python">from vizdoom_benchmarks import ViZDoomBenchmark, ViZDoomConfig
+
+benchmark = ViZDoomBenchmark(ViZDoomConfig(profile=&quot;deadly-corridor&quot;))
+</code></pre>
+<p>RGB frames, game variables, optional audio, and notifications cross the Policy
+boundary only as bounded values and canonical tensors. Most profiles use a
+strict discrete action. Deathmatch uses a strict object containing one discrete
+binary-button selection and three continuous delta controls.</p>
+<p>The primary metric is mean return. Feedback includes bounded per-Episode
+summaries and a diagnostic trace covering at most 32 steps in each of four
+Episodes. Long Episodes retain their first and last steps, bounded samples of
+reward and game-variable-change events, and an even timeline sample. Selected
+screen frames, game variables, and optional audio are stored losslessly in
+compressed NPZ artifacts; optional notifications remain inline. PNG contact
+sheets cover traced Episodes, while every Episode publishes its own bounded
+animated GIF replay exposing the visual trajectory, action meaning, reward, and
+primary game variables. Omitted trace Episodes and steps plus sampled replay
+frames are reported explicitly; the Kernel-owned <code>feedback.json</code> retains every
+Episode result without seeds, paths, or WAD identity.</p>
+<p>Commercial Doom/Doom2 map registrations are intentionally excluded because
+their WADs do not ship with ViZDoom. FreeDoom campaign maps can be added as a
+separate suite if desired.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

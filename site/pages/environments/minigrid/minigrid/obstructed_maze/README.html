@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid ObstructedMaze Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-obstructedmaze-benchmark">MiniGrid ObstructedMaze Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/ObstructedMazeEnv/">MiniGrid ObstructedMaze</a>
+long-horizon manipulation task.</p>
+<p>Depending on the selected profile, the Policy must open grey boxes containing
+keys, pick up and drop green balls obstructing doors, unlock rooms, and finally
+pick up the blue mission ball. The blue target and green blockers are distinct;
+only target pickup terminates successfully. <code>drop</code> is required to relocate a
+blocker and free the carrying slot, while <code>done</code> is an unused no-op.</p>
+<p>Feedback and the bounded semantic <code>trace.jsonl</code> expose discovery steps,
+box-opening, blocker pickup/drop, key pickup/drop, locked and unlocked door
+events, target discovery, failed interactions, target pickups blocked by full
+hands, observation novelty, ineffective actions, action mix, and the exact
+terminal reason. They publish no Episode seeds, private identity, or Host
+paths.</p>
+<pre><code class="language-python">from minigrid_obstructed_maze import (
+    ObstructedMazeBenchmark,
+    ObstructedMazeConfig,
+    baseline_program,
+)
+
+benchmark = ObstructedMazeBenchmark(
+    ObstructedMazeConfig(profile=&quot;Full-v1&quot;)
+)
+program = baseline_program()
+</code></pre>
+<p>The packaged baseline builds a relative map from Policy-visible observations
+and implements the complete object-moving and unlocking state machine. Tests
+using <code>ProcessExecution.unsafe()</code> execute trusted packaged code only; that
+backend is not a sandbox.</p>
+<p>All 13 upstream registrations are profiles, from <code>1Dl-v0</code> through <code>Full-v1</code>.
+The Host selects one profile before the Run; the profile is visible to the
+Agent, fixed for the Run, and included in the environment digest.</p>
+<p>The legacy <code>2Dlhb-v0</code>, <code>1Q-v0</code>, <code>2Q-v0</code>, and <code>Full-v0</code> registrations retain an
+upstream generation flaw that can place a green blocker over a key and make a
+generated task structurally unsolvable. This risk is explicit in Benchmark
+metadata and Feedback; use the corresponding <code>v1</code> profile for RL datasets that
+must avoid it.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>

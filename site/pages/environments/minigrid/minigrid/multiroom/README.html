@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="author" content="Anonymous Authors"><meta name="description" content="Anonymous review artifact for executable policy evolution in interactive environments.">
+<title>MiniGrid MultiRoom Benchmark · EvoPolicyGym</title><link rel="stylesheet" href="../../../../../style.css"></head>
+<body><header><nav aria-label="Main navigation"><a class="brand" href="../../../../../../index.html">EvoPolicyGym</a><div class="navlinks"><a href="../../../../docs/index.html">Documentation</a><a href="../../../../../../index.html#environments">Environments</a><a href="../../../../REVIEW.html">Review guide</a></div></nav></header>
+<main class="doc"><h1 id="minigrid-multiroom-benchmark">MiniGrid MultiRoom Benchmark</h1>
+<p>An independently installable EvoPolicyGym Benchmark for the
+<a href="https://minigrid.farama.org/environments/minigrid/MultiRoomEnv/">MiniGrid MultiRoom</a>
+navigation task.</p>
+<p>The Policy receives the upstream <code>7 × 7 × 3</code> egocentric symbolic image,
+compass direction, and fixed mission. It must discover a chain of rooms, open
+the connecting doors, and reach the green goal in the final room. The primary
+score is mean upstream Episode return; success rate remains separately reported.</p>
+<p>The image uses <code>image[view_x, view_y, channel]</code>: the agent is at <code>(3, 6)</code>,
+forward decreases <code>view_y</code>, and right increases <code>view_x</code>. Actions <code>3</code>
+(<code>pick_up</code>), <code>4</code> (<code>drop</code>), and <code>6</code> (<code>done</code>) are unused. Opening or crossing a
+door is intermediate; only moving forward onto the final green goal naturally
+terminates the Episode. Success reward is
+<code>1 - 0.9 * step_count / max_episode_steps</code>; all other rewards are zero.</p>
+<h2 id="install-and-test">Install and test</h2>
+<p>From the EvoPolicyGym repository root:</p>
+<pre><code class="language-console">uv sync --project environments/minigrid/minigrid/multiroom --extra dev
+uv run --project environments/minigrid/minigrid/multiroom \
+  python -m unittest discover \
+  -s environments/minigrid/minigrid/multiroom/tests
+uv build environments/minigrid/minigrid/multiroom
+</code></pre>
+<h2 id="public-api">Public API</h2>
+<pre><code class="language-python">from minigrid_multiroom import (
+    MultiRoomBenchmark,
+    MultiRoomConfig,
+    baseline_program,
+)
+
+benchmark = MultiRoomBenchmark(
+    MultiRoomConfig(profile=&quot;N6-S10&quot;),
+)
+program = baseline_program()
+</code></pre>
+<p>Available profiles are <code>N2-S4</code>, <code>N4-S5</code>, <code>N4-S5-v0-legacy-N6</code>, and
+<code>N6-S10</code>. The legacy profile preserves the upstream registration whose name
+says four rooms but whose configuration actually generates six. A profile is
+Host-selected before a Run and contributes to the environment digest.</p>
+<p>Feedback reports success, door and final-goal discovery steps, door-open,
+door-close, and door-crossing event counts, failed toggles, blocked forward
+moves, unused actions, observation novelty, ineffective actions, action mix,
+return, truncation, and Policy failures. Door values deliberately count events,
+not unique physical doors: only adjacent door colors are guaranteed to differ,
+so a color cannot safely serve as a door identity from public observations.
+<code>trace.jsonl</code> contains a bounded semantic trace for at most four Episodes,
+retaining the first 128 and last 32 transitions of long Episodes. It contains
+no Episode seed, private Case identity, or Host path.</p>
+<p>The packaged baseline builds a relative map from public egocentric
+observations, opens reachable doors, and shortest-path plans to the goal. It
+consumes no private environment state.</p>
+<p>Tests that use <code>ProcessExecution.unsafe()</code> run trusted packaged code only.
+That backend is a local process mechanism, not a sandbox and not suitable for
+hostile Programs.</p></main>
+<footer><span>EvoPolicyGym · v0.3.0 · Anonymous Authors</span><span>Static review materials · No analytics</span></footer></body></html>
